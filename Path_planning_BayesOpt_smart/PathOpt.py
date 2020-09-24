@@ -4,7 +4,10 @@ print("hello world")
 
 import numpy as np
 import seaborn as sns
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+
 import itertools
 import random
 import scipy.stats
@@ -153,8 +156,8 @@ ns = sv.shape[0]
 # generate init paths for preliminary sampling
 steps_init = 10
 Gd = init_path_generator(nt, ns, steps_init) # generate the initial path for evaluation
-plt.imshow(Gd[-1].reshape(nt, ns))  # show the latest path
-plt.title("The initial path for evaluation")
+# plt.imshow(Gd[-1].reshape(nt, ns))  # show the latest path
+# plt.title("The initial path for evaluation")
 # plt.show()
 
 # define the mesh grid for function evaluations
@@ -179,8 +182,9 @@ y = f(s, t)
 fig, ax = plt.subplots()
 ax.imshow(y, extent = (0, 1, 0, 1))
 ax.set(title = 'true function', xlabel = 's', ylabel = 't')
-postfix_time_label = str(datetime.datetime.now().month) + "_" + str(datetime.datetime.now().day) + "_" \
-                     + str(datetime.datetime.now().hour) + "_" + str(datetime.datetime.now().minute)
+# postfix_time_label = str(datetime.datetime.now().month) + "_" + str(datetime.datetime.now().day) + "_" \
+#                      + str(datetime.datetime.now().hour) + "_" + str(datetime.datetime.now().minute)
+postfix_time_label = '_'
 filename = os.getcwd() + "/fig_" + postfix_time_label
 create_dir(filename)
 
