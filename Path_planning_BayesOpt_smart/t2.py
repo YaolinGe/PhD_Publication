@@ -10,6 +10,7 @@ import shutil
 # f.close() 
 
 
+
 # os.rename('test', 'test_' + str(2))
 # os.rename('fig_', 'fig_' + str(1))
 # for i in range(0, 10):
