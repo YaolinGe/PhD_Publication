@@ -1,2 +1,1 @@
-
-This is the MASCOT project
+# Publication result
