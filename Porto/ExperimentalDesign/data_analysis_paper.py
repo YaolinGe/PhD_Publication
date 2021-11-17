@@ -12,6 +12,8 @@ depth = np.nan_to_num(data.get("depth"))
 salinity = np.nan_to_num(data.get("salinity"))
 
 
+
+
 #%% problem is it has nan values
 
 layer_depth = 3
