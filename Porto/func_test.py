@@ -60,4 +60,25 @@ fig.update_layout(scene_aspectmode='manual',
 
 plotly.offline.plot(fig, filename = "Porto/gaussian.html", auto_open = True)
 
+#%%
+#%%
+import plotly
+import plotly.graph_objects as go
+
+fig = go.Figure(data = go.Scatter3d(
+    x = lon.flatten(),
+    y = lat.flatten(),
+    z = depth.flatten(),
+    mode='markers',
+    marker=dict(
+        size=12,
+        color=salinity.flatten(),  # set color to an array/list of desired values
+        colorscale='jet',  # choose a colorscale
+        showscale=True,
+        opacity=0.8
+    )
+))
+plotly.offline.plot(fig, filename = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/scatter.html", auto_open = True)
+
+
 
