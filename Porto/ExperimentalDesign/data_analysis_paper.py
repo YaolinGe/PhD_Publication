@@ -19,21 +19,19 @@ lon_f = lon.flatten() # flattened
 depth_f = depth.flatten()
 salinity_f = salinity.flatten()
 
-lat_lc, lon_lc = 41.048, -8.829 # left bottom corner coordinate
-
-lat_rc, lon_rc = 41.150, -8.70
+lat_lc, lon_lc = 41.045, -8.819 # left bottom corner coordinate
 nlat = 20
 nlon = 15
 ndepth = 4
-lat_diff = 0.00833333
-lon_diff = 0.00857143
-
-X = np.linspace(0, 16000, nlat)
-Y = np.linspace(0, 12000, nlon)
-depth_domain = np.linspace(0, -5, ndepth)
-
+max_distance_lat = 18000
+max_distance_lon = 14000
+max_depth = -5
 alpha = 12
 Rm = get_rotational_matrix(alpha)
+
+X = np.linspace(0, max_distance_lat, nlat)
+Y = np.linspace(0, max_distance_lon, nlon)
+depth_domain = np.linspace(0, max_depth, ndepth)
 
 def get_value_at_loc(loc, k_neighbour):
     lat_loc, lon_loc, depth_loc = loc
@@ -53,11 +51,11 @@ values = np.zeros([nlat, nlon, ndepth])
 for i in range(nlat):
     print(i)
     for j in range(nlon):
+        tmp = Rm @ np.array([X[i], Y[j]])
+        xnew, ynew = tmp
+        lat_loc, lon_loc = xy2latlon(xnew, ynew, lat_lc, lon_lc)
         for k in range(ndepth):
-            tmp = Rm @ np.array([X[i], Y[j]])
-            xnew, ynew = tmp
-            lat_loc, lon_loc = xy2latlon(xnew, ynew, lat_lc, lon_lc)
-            # values[i, j, k] = get_value_at_loc([lat_loc, lon_loc, depth_domain[k]], 1)
+            values[i, j, k] = get_value_at_loc([lat_loc, lon_loc, depth_domain[k]], 1)
             grid.append([X[i], Y[j], depth_domain[k]])
             # grid.append([lat_domain[i], lon_domain[j], depth_domain[k]])
             grid_r.append([lat_loc, lon_loc, depth_domain[k]])
@@ -111,8 +109,8 @@ values_gussian_filtered = gaussian_filter(values, 1)
 # values_gaussian_filtered = values
 
 fig = go.Figure(data = go.Volume(
-    x=grid[:, 0].flatten(),
-    y=grid[:, 1].flatten(),
+    x=grid[:, 1].flatten(),
+    y=grid[:, 0].flatten(),
     z=grid[:, 2].flatten(),
     value=values_gussian_filtered.flatten(),
     # isomin=10,
@@ -129,6 +127,7 @@ fig = go.Figure(data = go.Volume(
     # colorscale=px.colors.sequential.Aggrnyl,
     # colorscale=px.colors.diverging.Spectral,
     # colorscale = "Aggrnyl",
+    colorscale = "rainbow",
     # reversescale=True,
     caps=dict(x_show=False, y_show=False, z_show = False),
     ))
@@ -187,8 +186,8 @@ grid_rect = np.array(grid_rect)
 import plotly.graph_objects as go
 import plotly
 fig = go.Figure(data=[go.Scatter3d(
-    x=grid_rect[:, 1].flatten(),
-    y=grid_rect[:, 0].flatten(),
+    x=grid_rect[:, 0].flatten(),
+    y=grid_rect[:, 1].flatten(),
     z=grid_rect[:, 2].flatten(),
     mode='markers',
     marker=dict(
