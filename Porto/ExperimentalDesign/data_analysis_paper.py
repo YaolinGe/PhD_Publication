@@ -100,14 +100,8 @@ values_gussian_filtered = gaussian_filter(values, 1)
 # values_gaussian_filtered = values
 from plotly.subplots import make_subplots
 
-fig = make_subplots(rows=3, cols=3,
-                    specs=[[{"type": "scene", "colspan": 2, "rowspan": 3}, None, {"type":"scene"}],
-                           [None, None, {"type": "scene", "rowspan": 2}],
-                           [None, None, None]],
-                    subplot_titles=("Salinity field", "Tide condition", "Water discharge [m3/s]"))
-
 # The regular grid needs to be used for plotting, image it is a square but the data is extracted at the certain locations
-fig.add_trace(go.Volume(
+fig = go.Figure(data = go.Volume(
     x=grid[:, 1].flatten(),
     y=grid[:, 0].flatten(),
     z=grid[:, 2].flatten(),
@@ -120,8 +114,18 @@ fig.add_trace(go.Volume(
     colorscale = "rainbow",
     # reversescale=True,
     caps=dict(x_show=False, y_show=False, z_show = False),
-    ),
-    row = 1, col = 1)
+    ),)
+fig = go.Figure(data = go.Scatter3d(
+    x=x,
+    y=y,
+    z=z,
+    mode='markers',
+    marker=dict(
+        size=12,
+        color=z,  # set color to an array/list of desired values
+        colorscale='Viridis',  # choose a colorscale
+        opacity=0.8
+))
 fig.add_trace(go.Cone(
     x=[lon_lc],
     y=[lat_lc],
@@ -152,9 +156,12 @@ camera1 = dict(
 
 fig.update_layout(scene_camera=camera1,
                   title="Salinity field under north moderate wind condition extract from Delft 3D")
-fig.update_scenes(xaxis_visible=False, yaxis_visible=False,zaxis_visible=False)
+# fig.update_scenes(xaxis_visible=False, yaxis_visible=False,zaxis_visible=False)
 fig.update_layout(scene_aspectmode='manual',
                   scene_aspectratio=dict(x=1, y=1, z=.5))
 
 plotly.offline.plot(fig, filename = "Porto/fig/delft3d/Sal_delft3d.html", auto_open = True)
 # fig.write_image("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Porto/fig/delft3d/sal_north_moderate.pdf", width=1980, height=1080, engine = "orca")
+
+
+
