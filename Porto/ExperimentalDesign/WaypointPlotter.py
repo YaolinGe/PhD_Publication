@@ -66,6 +66,7 @@ class WaypointGraphPlotter:
                 showscale = False,
             ),
             line = dict(
+                color = "orange",
                 width = 5,
                 showscale = False,
 
@@ -124,8 +125,8 @@ class WaypointGraphPlotter:
             xaxis = dict(nticks=4, range=[0, 10], showticklabels=False),
             yaxis = dict(nticks=4, range=[0, 10], showticklabels=False),
             zaxis=dict(nticks=4, range=[0, 5], showticklabels=False),
-            xaxis_title=dict(text = "Lon", font = dict(size = 18, family = "Times New Roman")),
-            yaxis_title=dict(text = "Lat", font = dict(size = 18, family = "Times New Roman")),
+            xaxis_title=dict(text = "East", font = dict(size = 18, family = "Times New Roman")),
+            yaxis_title=dict(text = "North", font = dict(size = 18, family = "Times New Roman")),
             zaxis_title=dict(text = "Depth", font = dict(size = 18, family = "Times New Roman")),
             # font=dict(
             #     family="Times New Roman",
