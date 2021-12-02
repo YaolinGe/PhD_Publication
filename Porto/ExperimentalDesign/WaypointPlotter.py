@@ -1,3 +1,7 @@
+'''
+Plot the waypoint illustration
+'''
+
 import plotly
 import numpy as np
 import plotly.graph_objects as go
@@ -62,7 +66,7 @@ class WaypointGraphPlotter:
             mode='markers + lines',
             marker=dict(
                 size=5,
-                color = "black",
+                color = "orange",
                 showscale = False,
             ),
             line = dict(
@@ -102,6 +106,17 @@ class WaypointGraphPlotter:
             ),
         ))
         fig.add_trace(go.Scatter3d(
+            x=[0],
+            y=[0],
+            z=[0],
+            mode='markers',
+            marker=dict(
+                size=5,
+                color = "black",
+                showscale = False,
+            ),
+        ))
+        fig.add_trace(go.Scatter3d(
             x=[5],
             y=[5],
             z=[3],
@@ -125,8 +140,8 @@ class WaypointGraphPlotter:
             xaxis = dict(nticks=4, range=[0, 10], showticklabels=False),
             yaxis = dict(nticks=4, range=[0, 10], showticklabels=False),
             zaxis=dict(nticks=4, range=[0, 5], showticklabels=False),
-            xaxis_title=dict(text = "East", font = dict(size = 18, family = "Times New Roman")),
-            yaxis_title=dict(text = "North", font = dict(size = 18, family = "Times New Roman")),
+            xaxis_title=dict(text = "Longitude", font = dict(size = 18, family = "Times New Roman")),
+            yaxis_title=dict(text = "Latitude", font = dict(size = 18, family = "Times New Roman")),
             zaxis_title=dict(text = "Depth", font = dict(size = 18, family = "Times New Roman")),
             # font=dict(
             #     family="Times New Roman",
@@ -185,6 +200,23 @@ class WaypointGraphPlotter:
                     arrowsize=3,
                     arrowwidth=1,
                     arrowhead=1),
+                dict(
+                    x=2.5,
+                    y=2,
+                    z=1,
+                    text="Sampling path",
+                    textangle=0,
+                    ax=-50,
+                    ay=-70,
+                    font=dict(
+                        color="orange",
+                        size=18,
+                        family="Times New Roman"
+                    ),
+                    arrowcolor="orange",
+                    arrowsize=3,
+                    arrowwidth=1,
+                    arrowhead=1),
                 ],
             ),
             # title="Plot Title",
@@ -197,7 +229,7 @@ class WaypointGraphPlotter:
         fig.update_coloraxes(colorscale = "Brwnyl", colorbar=dict(lenmode='fraction', len=0.5, thickness=20, tickfont = dict(size = 18, family = "Times New Roman"), title = "EIBV", titlefont = dict(size = 18, family = "Times New Roman")))
         fig.update_layout(coloraxis_colorbar_x=0.75)
         # fig.write_image("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Porto/fig/waypoint/waypoint.pdf", width=1980, height=1080,)
-        plotly.offline.plot(fig, "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Porto/fig/waypoint/waypoint.html", auto_open=True)
+        plotly.offline.plot(fig, filename = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Porto/fig/waypoint/waypoint.html", auto_open=True)
         print("Now")
 
 
