@@ -8,6 +8,10 @@ __maintainer__ = "Yaolin Ge"
 __email__ = "yaolin.ge@ntnu.no"
 __status__ = "UnderDevelopment"
 
+'''
+Generate actual data
+'''
+
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -21,8 +25,6 @@ from usr_func import *
 class RawDataHandler:
 
     datapath = '/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Data/Nidelva/July06/Data/'
-    # datapath = '/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Missions/Nidelva/July06/Adaptive/Data/'
-    # figpath = '/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Missions/Nidelva/July06/Adaptive/fig/'
 
     def __init__(self):
         print("hello world")
