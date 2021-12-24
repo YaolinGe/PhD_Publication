@@ -21,6 +21,7 @@ from usr_func import *
 import os
 import time
 import netCDF4
+import h5py
 from matplotlib.gridspec import GridSpec
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from Nidelva.Simulator.MetHandler import MetHandler
@@ -30,12 +31,12 @@ class SINMODHandler(MetHandler):
 
     data_folder = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Data/Nidelva/SINMOD_DATA/"
     figpath = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/SINMOD/"
-    layers = 1
+    layers = -1
 
     def __init__(self):
         MetHandler.__init__(self)
-        self.load_met()
-        self.load_sinmod()
+        # self.load_met()
+        # self.load_sinmod()
         print("hello world")
 
     def load_sinmod(self):
@@ -61,6 +62,35 @@ class SINMODHandler(MetHandler):
                 self.sort_data_before_plotting()
                 self.visualise_data()
                 # break
+
+    def average_sinmod(self):
+        files = os.listdir(self.data_folder)
+        files.sort()
+        self.sal_ave = []
+        for file in files:
+            if file.endswith(".nc"):
+                print(file)
+                t1 = time.time()
+                self.sinmod = netCDF4.Dataset(self.data_folder + file)
+                ref_timestamp = datetime.strptime(file[8:18], "%Y.%m.%d").timestamp()
+                self.timestamp = np.array(self.sinmod["time"]) * 24 * 3600 + ref_timestamp  # change ref timestamp
+                self.lat = np.array(self.sinmod['gridLats'])
+                self.lon = np.array(self.sinmod['gridLons'])
+                self.depth = np.array(self.sinmod['zc'])
+                self.salinity = np.mean(self.sinmod['salinity'], axis = 0)
+                self.sal_ave.append(self.salinity)
+                t2 = time.time()
+                print("Time consumed: ", t2 - t1)
+                # break
+        self.sal_ave = np.array(self.sal_ave)
+        self.sal_ave = np.nanmean(self.sal_ave, axis = 0)
+
+        file_average = h5py.File(self.data_folder + "sinmod_ave.h5", 'w')
+        file_average.create_dataset("lat", data = self.lat)
+        file_average.create_dataset("lon", data = self.lon)
+        file_average.create_dataset("depth", data = self.depth)
+        file_average.create_dataset("salinity", data = self.sal_ave)
+        print("Data is created successfully")
 
     def load_met(self):
         self.load_tide()
@@ -137,13 +167,23 @@ class SINMODHandler(MetHandler):
 
 if __name__ == "__main__":
     a = SINMODHandler()
+    a.average_sinmod()
     # a.load_sinmod()
     # a.index_element()
     # a.visualise_data()
 
 #%%
-plt.plot(np.argmin(a.DM_wind, axis = 1))
+print(a.lat.shape)
+print(a.lon.shape)
+print(a.depth.shape)
+print(a.salinity.shape)
+print(a.sinmod["salinity"])
+print(a.sal_ave.shape)
+#%%
+plt.scatter(a.lon, a.lat, c = a.sal_ave[0, :, :], cmap = "Paired", vmin = 0, vmax = 30)
+plt.colorbar()
 plt.show()
+
 #%%
 self = a
 from mpl_toolkits.axes_grid1 import make_axes_locatable
