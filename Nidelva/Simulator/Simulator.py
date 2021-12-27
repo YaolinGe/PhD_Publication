@@ -11,7 +11,8 @@ class Simulator:
     box_path = '/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Config/box.txt'
     grid_path = '/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Config/grid_not_tilted.txt'
     lat_origin, lon_origin = 63.448, 10.4  # origin location
-    depth_limit = 5 # depth == 5 [m]
+    depth_sim = [0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5.]
+    # depth_limit = 5 # depth == 5 [m]
 
 
     def __init__(self):
@@ -29,6 +30,8 @@ class Simulator:
 
     def load_grid(self):
         self.grid = np.loadtxt(self.grid_path, delimiter=", ")
+        self.lat_grid = self.grid[:, 0]
+        self.lon_grid = self.grid[:, 1]
         print("grid is loaded successfully!")
 
     def get_ind_for_grid(self):
@@ -52,7 +55,11 @@ class Simulator:
         print("Data is successfully extracted on the grid")
 
     # def setup_gaussian_process(self):
-        
+        # def get_distance_matrix(self):
+            # xgrid, ygrid = latlon2xy(self.lat_grid, self.lon_grid, self.lat_origin, self.lon_origin)
+
+
+
 
 
 
