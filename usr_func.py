@@ -21,3 +21,10 @@ def get_rotational_matrix(alpha):
     R = np.array([[np.cos(deg2rad(alpha)), np.sin(deg2rad(alpha))],
                   [-np.sin(deg2rad(alpha)), np.cos(deg2rad(alpha))]])
     return R
+
+def setLoggingFilename(filename):
+    import logging
+    LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
+    DATE_FORMAT = "%m/%d/%Y %H:%M:%S %p"
+    logging.basicConfig(filename=filename, level=logging.DEBUG, format=LOG_FORMAT, datefmt=DATE_FORMAT)
+
