@@ -17,6 +17,7 @@ from matplotlib.cm import ScalarMappable
 import matplotlib.pyplot as plt
 import matplotlib.path as mplPath  # used to determine whether a point is inside the grid or not
 
+
 class WaypointNode:
     '''
     generate node for each waypoint

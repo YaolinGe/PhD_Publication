@@ -1,3 +1,10 @@
+"""
+This script tests the grid generation for the polygon boundary
+Author: Yaolin Ge
+Contact: yaolin.ge@ntnu.no
+Date: 2022-01-05
+"""
+
 
 from Nidelva.Simulation.Field.Grid.gridWithinPolygonGenerator import GridGenerator
 from gmplot import GoogleMapPlotter
