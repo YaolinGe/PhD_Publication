@@ -15,7 +15,7 @@ setLoggingFilename("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelv
 
 class GridGenerator:
 
-    def __init__(self, polygon=None, distance_neighbour=0, no_children=6, points_permitted = 1000):
+    def __init__(self, polygon=None, distance_neighbour=0, no_children=6, points_allowed = 1000):
         if polygon is None:
             raise ValueError("Polygon is not valid, please check it again")
         if distance_neighbour == 0:
@@ -24,7 +24,7 @@ class GridGenerator:
             warnings.warn("Grid to be generated may not be regular")
         self.polygon = polygon
         self.distance_neighbour = distance_neighbour
-        self.points_permitted = points_permitted
+        self.points_allowed = points_allowed
         self.counter_grid = 0
         self.grid = []
         self.angle_neighbour = deg2rad(np.arange(no_children) * 360 / no_children)  # angles for polygon
@@ -67,15 +67,15 @@ class GridGenerator:
         gridNode_start = gridNode(len(start_node), start_node, self.loc_start)
         allGridWithinField = self.traverseChildrenNodes(gridNode_start)
         self.grid = np.array(self.grid)
-        if len(self.grid) > self.points_permitted:
-            print("{:d} grid points are generated, only {:d} waypoints are selected!".format(len(self.grid), self.pointsPr))
-            self.grid = self.grid[:self.points_permitted, :]
+        if len(self.grid) > self.points_allowed:
+            print("{:d} grid points are generated, only {:d} waypoints are selected!".format(len(self.grid), self.points_allowed))
+            self.grid = self.grid[:self.points_allowed, :]
         else:
             print("{:d} grid points are generated, all are selected!".format(len(self.grid)))
         print("grid shape: ", self.grid.shape)
 
     def traverseChildrenNodes(self, grid_node):
-        if self.counter_grid > self.points_permitted:
+        if self.counter_grid > self.points_allowed:
             return gridNode(0, [], grid_node.grid_loc)
         for i in range(grid_node.subGrid_len):
             subsubGrid = []

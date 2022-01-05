@@ -12,7 +12,7 @@ from usr_func import *
 
 class GridGeneratorCircularBoundary:
 
-    def __init__(self, centre=None, radius=0, npoints=10, distance_neighbour = 0, no_children = 6):
+    def __init__(self, centre=None, radius=0, polygon_sides=10, distance_neighbour=0, no_children=6, points_allowed=1000):
         if centre is None:
             self.centre = [0, 0]
             raise ValueError("Circle centre is none, please check")
@@ -24,21 +24,23 @@ class GridGeneratorCircularBoundary:
             warnings.warn("Grid to be generated may not be regular")
         self.centre = centre # [lat_centre, lon_centre]
         self.radius = radius
-        self.npoints = npoints
+        self.polygon_sides = polygon_sides
+        self.points_allowed = points_allowed
         self.distance_neighbour = distance_neighbour
         self.no_children = no_children
         self.getCircularBoundary()
         self.generateGrid()
 
     def getCircularBoundary(self):
-        self.theta = np.linspace(0, np.pi * 2, self.npoints)
+        self.theta = np.linspace(0, np.pi * 2, self.polygon_sides)
         self.x = self.radius * np.sin(self.theta)
         self.y = self.radius * np.cos(self.theta)
         self.lat_circle, self.lon_circle = xy2latlon(self.x, self.y, self.centre[0], self.centre[1])
 
     def generateGrid(self):
         self.circle = np.hstack((self.lat_circle.reshape(-1, 1), self.lon_circle.reshape(-1, 1)))
-        self.grid = GridGenerator(polygon=self.circle, distance_neighbour=self.distance_neighbour, no_children=self.no_children).grid
+        self.grid = GridGenerator(polygon=self.circle, distance_neighbour=self.distance_neighbour,
+                                  no_children=self.no_children, points_allowed=self.points_allowed).grid
 
 
 

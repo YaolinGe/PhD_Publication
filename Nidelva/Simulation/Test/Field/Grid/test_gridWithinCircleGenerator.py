@@ -1,4 +1,9 @@
-
+"""
+This script tests the grid generation for the polygon boundary
+Author: Yaolin Ge
+Contact: yaolin.ge@ntnu.no
+Date: 2022-01-05
+"""
 from Nidelva.Simulation.Field.Grid.gridWithinCircleGenerator import GridGeneratorCircularBoundary
 from gmplot import GoogleMapPlotter
 from matplotlib.colors import Normalize
@@ -6,12 +11,12 @@ from matplotlib.cm import ScalarMappable
 import numpy as np
 import matplotlib.pyplot as plt
 
-polygon = np.array([[6.344800000000000040e+01, 1.040000000000000036e+01],
-                   [6.344800000000000040e+01, 1.041999999999999993e+01],
-                   [6.346000000000000085e+01, 1.041999999999999993e+01],
-                   [6.346000000000000085e+01, 1.040000000000000036e+01]])
-grid = GridGeneratorCircularBoundary([0, 0], 1400, 200, distance_neighbour = 120, no_children=6).grid
-
+# polygon = np.array([[6.344800000000000040e+01, 1.040000000000000036e+01],
+#                    [6.344800000000000040e+01, 1.041999999999999993e+01],
+#                    [6.346000000000000085e+01, 1.041999999999999993e+01],
+#                    [6.346000000000000085e+01, 1.040000000000000036e+01]])
+grid = GridGeneratorCircularBoundary(centre=[63.46, 10.42], radius=1400, polygon_sides=200, points_allowed=1000, distance_neighbour = 120, no_children=6).grid
+# TODO check circular grid generation
 
 plt.plot(grid[:, 1], grid[:, 0], 'k.')
 plt.show()
