@@ -29,13 +29,13 @@ dataset_interpolated = data_interpolator.dataset_interpolated
 
 matern_kernel = Matern_Kernel(coordinates=coordinates, sill=.5, range_lateral=550, range_vertical=2, nugget=.04)
 
-knowledge = Knowledge(coordinates=coordinates, mu_conditioned=vectorise(dataset_interpolated["salinity"]),
-                      Sigma_conditioned=matern_kernel.Sigma, threshold_salinity=28, kernel=matern_kernel, ind_prev=0,
+knowledge = Knowledge(coordinates=coordinates, mu=vectorise(dataset_interpolated["salinity"]),
+                      Sigma=matern_kernel.Sigma, threshold_salinity=28, kernel=matern_kernel, ind_prev=0,
                       ind_now=1, distance_lateral=120, distance_vertical=1, distanceTolerance=.001)
 
 print(knowledge.coordinates.shape)
-print(knowledge.mu_conditioned.shape)
-print(knowledge.Sigma_conditioned.shape)
+print(knowledge.mu.shape)
+print(knowledge.Sigma.shape)
 print(knowledge.ind_prev)
 print(knowledge.ind_now)
 print(knowledge.distance_neighbours)

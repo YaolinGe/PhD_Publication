@@ -14,14 +14,9 @@ polygon = np.array([[6.344800000000000040e+01, 1.040000000000000036e+01],
                    [6.344800000000000040e+01, 1.041999999999999993e+01],
                    [6.346000000000000085e+01, 1.041999999999999993e+01],
                    [6.346000000000000085e+01, 1.040000000000000036e+01]])
-grid = GridGenerator(polygon = polygon, distance_neighbour = 120, no_children=6).grid
-depth = [1, 2, 3]
-coordinates = []
-for i in range(grid.shape[0]):
-    for j in range(len(depth)):
-        coordinates.append([grid[i, 0], grid[i, 1], depth[j]])
-coordinates = np.array(coordinates)
-
+depth = [.5, 1, 1.5]
+gridGenerator = GridGenerator(polygon = polygon, depth=depth, distance_neighbour = 120, no_children=6)
+coordinates = gridGenerator.coordinates
 data_interpolator = DataInterpolator(coordinates = coordinates)
 dataset_interpolated = data_interpolator.dataset_interpolated
 dataset_sinmod = data_interpolator.sinmod
@@ -56,14 +51,14 @@ os.system("open -a \"Google Chrome\" /Users/yaoling/OneDrive\ -\ NTNU/MASCOT_PhD
 '''
 Only plot certain layers to make it work 
 '''
-depth_plot = 3
+depth_plot = 1.5
 ind_surface = np.where(dataset_sinmod["depth"] == depth_plot)[0]
 ind_surface_interpolated = np.where(dataset_interpolated["depth"] == depth_plot)[0]
 import matplotlib.pyplot as plt
 plt.scatter(dataset_sinmod["lon"][ind_surface], dataset_sinmod["lat"][ind_surface], c = dataset_sinmod["salinity"][ind_surface],
-            vmin = 10, vmax = 28, cmap = "Paired", alpha = .1)
+            vmin = 26, vmax = 30, cmap = "Paired", alpha = .1)
 plt.scatter(dataset_interpolated["lon"][ind_surface_interpolated], dataset_interpolated["lat"][ind_surface_interpolated],
-            c = dataset_interpolated["salinity"][ind_surface_interpolated], vmin = 10, vmax = 28, cmap = "Paired")
+            c = dataset_interpolated["salinity"][ind_surface_interpolated], vmin = 26, vmax = 30, cmap = "Paired")
 
 plt.axis([10.40,10.44, 63.44, 63.47])
 plt.grid()

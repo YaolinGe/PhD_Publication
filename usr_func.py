@@ -1,5 +1,9 @@
 import numpy as np
 from scipy.stats import mvn, norm
+import matplotlib.pyplot as plt
+plt.rcParams["font.family"] = "Times New Roman"
+plt.rcParams.update({'font.size': 12})
+plt.rcParams.update({'font.style': 'oblique'})
 circumference = 40075000 # [m], circumference
 
 
@@ -74,8 +78,9 @@ def getFVector(ind, N):
 
 def get_grid_ind_at_nearest_loc(loc, coordinates):
     lat, lon, depth = loc
-    x, y = latlon2xy(coordinates[:, 0], coordinates[:, 1], lat, lon)
-    dist = x ** 2 + y ** 2 + depth ** 2
+    dx, dy = latlon2xy(coordinates[:, 0], coordinates[:, 1], lat, lon)
+    dz = coordinates[:, 2] - depth
+    dist = dx ** 2 + dy ** 2 + dz ** 2
     ind = np.argmin(dist)
     return ind
 

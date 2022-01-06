@@ -17,7 +17,7 @@ class Matern_Kernel:
         self.nugget = nugget
 
         self.sigma = np.sqrt(self.sill)
-        self.eta = 4.5 / self.range_lateral
+        self.eta = 4.5 / self.range_lateral # 3/2 matern
         self.ksi = self.range_lateral / self.range_vertical
         self.R = np.diagflat(self.nugget)
 
