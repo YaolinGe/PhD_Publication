@@ -15,7 +15,9 @@ from usr_func import *
 
 class DataHandler:
 
-    def __init__(self, data_source="SINMOD"):
+    def __init__(self, layers=8, data_source="SINMOD"):
+        self.layers=layers
+
         print("h")
 
     def load_all_sinmod_data_from_folder(self):
@@ -53,8 +55,8 @@ class DataHandler:
                 self.timestamp = np.array(self.sinmod["time"]) * 24 * 3600 + ref_timestamp  # change ref timestamp
                 self.lat = np.array(self.sinmod['gridLats'])
                 self.lon = np.array(self.sinmod['gridLons'])
-                self.depth = np.array(self.sinmod['zc'])
-                self.salinity = np.mean(self.sinmod['salinity'], axis = 0)
+                self.depth = np.array(self.sinmod['zc'])[:self.layers]
+                self.salinity = np.mean(np.array(self.sinmod['salinity'])[:, :self.layers, :, :], axis = 0)
                 self.sal_ave.append(self.salinity)
                 t2 = time.time()
                 print("Time consumed: ", t2 - t1)

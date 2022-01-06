@@ -41,6 +41,7 @@ class DataInterpolator:
             self.interpolate_delft3d_data_for_coordinates()
 
     def load_sinmod(self):
+        t1 = time.time()
         self.sinmod_datapath = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Data/Nidelva/SINMOD_DATA/data_sinmod.csv"
         self.sinmod = pd.read_csv(self.sinmod_datapath)
         self.lat_sinmod = self.sinmod["lat"]
@@ -49,6 +50,8 @@ class DataInterpolator:
         self.salinity_sinmod = self.sinmod["salinity"]
         self.lat_sinmod, self.lon_sinmod, self.depth_sinmod, self.salinity_sinmod = \
             map(vectorise, [self.lat_sinmod, self.lon_sinmod, self.depth_sinmod, self.salinity_sinmod])
+        t2 = time.time()
+        print("Loading time consumed: ", t2 - t1)
         print("SINMOD data is loaded successfully!")
 
     def load_delft3d(self):
@@ -69,6 +72,7 @@ class DataInterpolator:
         self.DistanceMatrix_x = x_coordinates @ np.ones([1, len(x_sinmod)]) - np.ones([len(x_coordinates), 1]) @ x_sinmod.T
         self.DistanceMatrix_y = y_coordinates @ np.ones([1, len(y_sinmod)]) - np.ones([len(y_coordinates), 1]) @ y_sinmod.T
         self.DistanceMatrix_depth = depth_coordinates @ np.ones([1, len(depth_sinmod)]) - np.ones([len(depth_coordinates), 1]) @ depth_sinmod.T
+        # self.DistanceMatrix = self.DistanceMatrix_x ** 2 + self.DistanceMatrix_y ** 2 + self.DistanceMatrix_depth ** 2
         self.DistanceMatrix = self.DistanceMatrix_x ** 2 + self.DistanceMatrix_y ** 2 + self.DistanceMatrix_depth ** 2
         self.ind_interpolated = np.argmin(self.DistanceMatrix, axis = 1) # interpolated vectorised indices
         self.salinity_interpolated = vectorise(self.salinity_sinmod[self.ind_interpolated])

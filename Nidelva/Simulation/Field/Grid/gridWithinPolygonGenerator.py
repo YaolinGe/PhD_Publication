@@ -14,15 +14,20 @@ setLoggingFilename("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelv
 
 
 class GridGenerator:
-
-    def __init__(self, polygon=None, distance_neighbour=0, no_children=6, points_allowed = 1000):
+    '''
+    Generate grid within 2D dimension
+    '''
+    def __init__(self, polygon=None, depth=None, distance_neighbour=0, no_children=6, points_allowed = 1000):
         if polygon is None:
             raise ValueError("Polygon is not valid, please check it again")
+        if depth is None:
+            raise ValueError("Depth is not valid, please check it again")
         if distance_neighbour == 0:
             raise ValueError("Neighbour distance cannot be 0, please check it again")
         if no_children != 6:
             warnings.warn("Grid to be generated may not be regular")
         self.polygon = polygon
+        self.depth = depth
         self.distance_neighbour = distance_neighbour
         self.points_allowed = points_allowed
         self.counter_grid = 0
@@ -31,6 +36,7 @@ class GridGenerator:
         self.loc_start = [self.polygon[0, 0], self.polygon[0, 1]]
         self.polygon_path = mplPath.Path(self.polygon)
         self.traverseField()
+        self.getCoordinates()
 
     def revisit(self, loc):
         '''
@@ -95,5 +101,13 @@ class GridGenerator:
             else:
                 return gridNode(0, [], grid_node.subGrid_loc[i])
         return gridNode(0, [], grid_node.grid_loc)
+
+    def getCoordinates(self):
+        coordinates = []
+        for i in range(self.grid.shape[0]):
+            for j in range(len(self.depth)):
+                coordinates.append([self.grid[i, 0], self.grid[i, 1], self.depth[j]])
+        self.coordinates = np.array(coordinates)
+        print("Coordinates are built successfully! Coordinates: ", self.coordinates.shape)
 
 

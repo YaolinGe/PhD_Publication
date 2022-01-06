@@ -19,11 +19,17 @@ class Sampler:
 
     def sample(self):
         F = getFVector(self.ind_sample, self.knowledge.coordinates.shape[0])
-        self.knowledge.mu_conditioned, self.knowledge.Sigma_conditioned = \
-            GPupd(mu_cond=self.knowledge.mu_conditioned, Sigma_cond=self.knowledge.Sigma_conditioned, F=F,
+        self.knowledge.mu, self.knowledge.Sigma = \
+            GPupd(mu_cond=self.knowledge.mu, Sigma_cond=self.knowledge.Sigma, F=F,
                   R=self.knowledge.kernel.R, y_sampled=self.ground_truth[self.ind_sample])
+
+        self.knowledge.trajectory.append([self.knowledge.coordinates[self.knowledge.ind_now, 0],
+                                          self.knowledge.coordinates[self.knowledge.ind_now, 1],
+                                          self.knowledge.coordinates[self.knowledge.ind_now, 2]])
+
         self.knowledge.ind_prev = self.knowledge.ind_now
         self.knowledge.ind_now = self.ind_sample
+
 
     @property
     def Knowledge(self):
