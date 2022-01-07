@@ -84,13 +84,4 @@ def get_grid_ind_at_nearest_loc(loc, coordinates):
     ind = np.argmin(dist)
     return ind
 
-# loc = [63.47, 10.415, 0]
-# id = get_ind_nearest(loc, coordinates)
-# import matplotlib.pyplot as plt
-# plt.plot(coordinates[:, 1], coordinates[:, 0], 'k.')
-# plt.plot(loc[1], loc[0], 'r*')
-# plt.plot(coordinates[id, 1], coordinates[id, 0], 'bx')
-# plt.show()
-
-
 
