@@ -12,10 +12,11 @@ from scipy.interpolate import griddata
 from scipy.interpolate import interpn
 import plotly.graph_objects as go
 import plotly
+from plotly.subplots import make_subplots
 import os
 from scipy.interpolate import NearestNDInterpolator
-plotly.io.orca.config.executable = '/usr/local/bin/orca'
-plotly.io.orca.config.save()
+# plotly.io.orca.config.executable = '/usr/local/bin/orca'
+# plotly.io.orca.config.save()
 
 from Nidelva.Simulation.Plotter.SlicerPlot import SlicerPlot
 
@@ -92,52 +93,64 @@ class KnowledgePlot:
         number_of_plots = len(depth_layer)
 
         # print(lat.shape)
-        points, values = interpolate_3d(lon, lat, depth, self.knowledge.mu)
+        points_mean, values_mean = interpolate_3d(lon, lat, depth, self.knowledge.mu)
+        points_std, values_std = interpolate_3d(lon, lat, depth, np.sqrt(np.diag(self.knowledge.Sigma)))
+        points_ep, values_ep = interpolate_3d(lon, lat, depth, self.knowledge.excursion_prob)
         trajectory = np.array(self.knowledge.trajectory)
 
-        # print(points)
-        # print(values)
-
-        # SlicerPlot(points, values)
-        fig = go.Figure(data = go.Volume(
-            x = points[:, 0],
-            y = points[:, 1],
-            z = -points[:, 2],
-            # value=values_smoothered.flatten(),
-            value=values.flatten(),
-            # x=lon,
-            # y=lat,
-            # z=depth,
-            # value=self.knowledge.mu.flatten(),
+        fig = make_subplots(rows = 1, cols = 3, specs = [[{'type': 'scene'}, {'type': 'scene'}, {'type': 'scene'}]],
+                            subplot_titles=("Mean", "Std", "EP"))
+        fig.add_trace(go.Volume(
+            x = points_mean[:, 0],
+            y = points_mean[:, 1],
+            z = -points_mean[:, 2],
+            value=values_mean.flatten(),
             isomin=self.vmin,
             isomax=self.vmax,
             opacity = .1,
-            # opacityscale=[[-0.5, 1], [-0.2, 0], [0.2, 0], [0.5, 1]],
             surface_count = 30,
-            # colorscale = "rainbow",
-            coloraxis="coloraxis",
+            colorscale = "rainbow",
+            # coloraxis="coloraxis1",
+            colorbar=dict(x=0.3,y=0.5, len=.5),
             reversescale=True,
             caps=dict(x_show=False, y_show=False, z_show = False),
-            ),)
+            ),
+            row=1, col=1
+        )
 
-        # if self.knowledge.trajectory:
-        #     fig.add_trace(go.Scatter3d(
-        #         # print(trajectory),
-        #         x=trajectory[:, 1],
-        #         y=trajectory[:, 0],
-        #         z=-trajectory[:, 2],
-        #         mode='markers+lines',
-        #         marker=dict(
-        #             size=5,
-        #             color = "black",
-        #             showscale = False,
-        #         ),
-        #         line=dict(
-        #             color="yellow",
-        #             width=3,
-        #             showscale=False,
-        #         )
-        #     ))
+        fig.add_trace(go.Volume(
+            x=points_std[:, 0],
+            y=points_std[:, 1],
+            z=-points_std[:, 2],
+            value=values_std.flatten(),
+            isomin=0,
+            isomax=1,
+            opacity=.1,
+            surface_count=30,
+            colorscale = "rdbu",
+            colorbar=dict(x=0.65, y=0.5, len=.5),
+            reversescale=True,
+            caps=dict(x_show=False, y_show=False, z_show=False),
+        ),
+            row=1, col=2
+        )
+
+        fig.add_trace(go.Volume(
+            x=points_ep[:, 0],
+            y=points_ep[:, 1],
+            z=-points_ep[:, 2],
+            value=values_ep.flatten(),
+            isomin=0,
+            isomax=1,
+            opacity=.1,
+            surface_count=30,
+            colorscale = "gnbu",
+            colorbar=dict(x=1, y=0.5, len=.5),
+            reversescale=True,
+            caps=dict(x_show=False, y_show=False, z_show=False),
+        ),
+            row=1, col=3
+        )
 
         fig.add_trace(go.Scatter3d(
             x=self.knowledge.coordinates[self.knowledge.ind_cand, 1],
@@ -149,7 +162,10 @@ class KnowledgePlot:
                 color="white",
                 showscale=False,
             ),
-        ))
+            showlegend=False,
+        ),
+            row='all', col='all'
+        )
 
         fig.add_trace(go.Scatter3d(
             x=self.knowledge.coordinates[self.knowledge.ind_cand_filtered, 1],
@@ -161,7 +177,10 @@ class KnowledgePlot:
                 color="blue",
                 showscale=False,
             ),
-        ))
+            showlegend=False, # remove all unnecessary trace names
+        ),
+            row='all', col='all'
+        )
 
         if self.knowledge.trajectory:
             fig.add_trace(go.Scatter3d(
@@ -173,37 +192,38 @@ class KnowledgePlot:
                 marker=dict(
                     size=5,
                     color = "black",
-                    showscale = False,
+                    showscale=False,
                 ),
                 line=dict(
                     color="yellow",
                     width=3,
                     showscale=False,
-                )
-            ))
+                ),
+                showlegend=False,
+            ),
+            row='all', col='all'
+            )
 
-        # fig = go.Figure(data = go.Scatter3d(
-        #     x = points[:, 0],
-        #     y = points[:, 1],
-        #     z = points[:, 2],
-        #
-        #     # x=lon,
-        #     # y=lat,
-        #     # z=depth,
-        #     mode="markers",
-        #     marker=dict(
-        #         # size=self.path[:, 3] * 100,
-        #         # color=self.path[:, 3] * 100 + 17,
-        #         # colorscale = "RdBu",
-        #         # color="black",
-        #         # color=self.knowledge.mu.squeeze(),
-        #         color=values_smoothered.flatten(),
-        #         coloraxis="coloraxis",
-        #         showscale=True,
-        #         reversescale=True,
-        #
-        #     ),))
-        fig.update_coloraxes(colorscale="rainbow")
+        fig.add_trace(go.Scatter3d(
+            x=[self.knowledge.coordinates[self.knowledge.ind_now, 1]],
+            y=[self.knowledge.coordinates[self.knowledge.ind_now, 0]],
+            z=[-self.knowledge.coordinates[self.knowledge.ind_now, 2]],
+            mode='markers',
+            marker=dict(
+                size=20,
+                color="red",
+                showscale=False,
+            ),
+            showlegend=False, # remove all unnecessary trace names
+        ),
+            row='all', col='all'
+        )
+
+        camera = dict(
+            up=dict(x=0, y=0, z=1),
+            center=dict(x=0, y=0, z=0),
+            eye=dict(x=2.25, y=2.25, z=2.25)
+        )
 
         fig.update_layout(
             scene = dict(
@@ -212,14 +232,33 @@ class KnowledgePlot:
                 yaxis_title='Lat [deg]',
                 zaxis_title='Depth [m]',
             ),
+            scene_aspectmode='manual',
+            scene_aspectratio=dict(x=1, y=1, z=.5),
+            scene2=dict(
+                zaxis=dict(nticks=4, range=[-2, 0], ),
+                xaxis_title='Lon [deg]',
+                yaxis_title='Lat [deg]',
+                zaxis_title='Depth [m]',
+            ),
+            scene2_aspectmode='manual',
+            scene2_aspectratio=dict(x=1, y=1, z=.5),
+            scene3=dict(
+                zaxis=dict(nticks=4, range=[-2, 0], ),
+                xaxis_title='Lon [deg]',
+                yaxis_title='Lat [deg]',
+                zaxis_title='Depth [m]',
+            ),
+            scene3_aspectmode='manual',
+            scene3_aspectratio=dict(x=1, y=1, z=.5),
+            scene_camera=camera,
+            scene2_camera=camera,
+            scene3_camera=camera,
         )
 
         # fig.update_scenes(xaxis_visible=False, yaxis_visible=False,zaxis_visible=False)
-        fig.update_layout(scene_aspectmode='manual',
-                          scene_aspectratio=dict(x=1, y=1, z=.5))
 
         plotly.offline.plot(fig, filename = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Simulation/"+self.filename+".html", auto_open = False)
-        os.system("open -a \"Google Chrome\" /Users/yaoling/OneDrive\ -\ NTNU/MASCOT_PhD/Publication/Nidelva/fig/Simulation/"+self.filename+".html")
+        # os.system("open -a \"Google Chrome\" /Users/yaoling/OneDrive\ -\ NTNU/MASCOT_PhD/Publication/Nidelva/fig/Simulation/"+self.filename+".html")
         # fig.write_image("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Simulation/Myopic/S_{:04d}.png".format(self.knowledge.step_no), width=1980, height=1080, engine = "orca")
 
 

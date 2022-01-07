@@ -7,14 +7,14 @@ Date: 2022-01-05
 
 """
 Usage:
-lat_next, lon_next, depth_next = MyopicPlanning(Knowledge, Experience).next_waypoint
+lat_next, lon_next, depth_next = MyopicPlanning_3D(Knowledge, Experience).next_waypoint
 """
 
 from usr_func import *
 import time
 
 
-class MyopicPlanning:
+class MyopicPlanning_3D:
 
     def __init__(self, knowledge):
         self.knowledge = knowledge
@@ -48,20 +48,25 @@ class MyopicPlanning:
             self.knowledge.ind_prev, 2]
         vec1 = vectorise([dx1, dy1, dz1])
         for i in range(len(self.knowledge.ind_cand)):
+            # if self.knowledge.ind_cand[i] != self.knowledge.ind_now:
             if self.knowledge.ind_cand[i] != self.knowledge.ind_now:
-                dx2, dy2 = latlon2xy(self.knowledge.coordinates[self.knowledge.ind_cand[i], 0],
-                                     self.knowledge.coordinates[self.knowledge.ind_cand[i], 1],
-                                     self.knowledge.coordinates[self.knowledge.ind_now, 0],
-                                     self.knowledge.coordinates[self.knowledge.ind_now, 1])
-                dz2 = self.knowledge.coordinates[self.knowledge.ind_cand[i], 2] - self.knowledge.coordinates[
-                    self.knowledge.ind_now, 2]
-                vec2 = vectorise([dx2, dy2, dz2])
-                if np.dot(vec1.T, vec2) >= 0:
-                    if dx2 == 0 and dy2 == 0:
-                        # print("Sorry, I cannot dive or float directly")
-                        pass
-                    else:
-                        id.append(self.knowledge.ind_cand[i])
+                # print("ind_cand[i]: ", self.knowledge.ind_cand[i])
+                # print("ind_visited: ", self.knowledge.ind_visited)
+                if not self.knowledge.ind_cand[i] in self.knowledge.ind_visited:
+                    # print("new point")
+                    dx2, dy2 = latlon2xy(self.knowledge.coordinates[self.knowledge.ind_cand[i], 0],
+                                         self.knowledge.coordinates[self.knowledge.ind_cand[i], 1],
+                                         self.knowledge.coordinates[self.knowledge.ind_now, 0],
+                                         self.knowledge.coordinates[self.knowledge.ind_now, 1])
+                    dz2 = self.knowledge.coordinates[self.knowledge.ind_cand[i], 2] - self.knowledge.coordinates[
+                        self.knowledge.ind_now, 2]
+                    vec2 = vectorise([dx2, dy2, dz2])
+                    if np.dot(vec1.T, vec2) >= 0:
+                        if dx2 == 0 and dy2 == 0:
+                            # print("Sorry, I cannot dive or float directly")
+                            pass
+                        else:
+                            id.append(self.knowledge.ind_cand[i])
         id = np.unique(np.array(id))  # filter out repetitive candidate locations
         self.knowledge.ind_cand_filtered = id  # refresh old candidate location
         t2 = time.time()
@@ -87,7 +92,9 @@ class MyopicPlanning:
                                                    self.knowledge.threshold_salinity) - .5).argmin()
         else:
             # print("Neighbouring location has next waypoint")
-            self.knowledge.ind_next = self.knowledge.ind_cand[np.argmin(np.array(eibv))]
+            self.knowledge.ind_next = self.knowledge.ind_cand_filtered[np.argmin(np.array(eibv))]
+            # print("knowledge ibv: ", self.knowledge.ibv)
+            self.knowledge.integratedBernoulliVariance.append(np.amin(eibv))
         print("Finding next waypoint takes: ", t2 - t1)
 
     @property
