@@ -20,7 +20,7 @@ polygon = np.array([[6.344800000000000040e+01, 1.040000000000000036e+01],
                    [6.344800000000000040e+01, 1.041999999999999993e+01],
                    [6.346000000000000085e+01, 1.041999999999999993e+01],
                    [6.346000000000000085e+01, 1.040000000000000036e+01]])
-depth = [.5, 1., 1.5]
+depth = [1, 5, 10]
 
 gridGenerator = GridGenerator(polygon = polygon, depth=depth, distance_neighbour = 120, no_children=6)
 coordinates = gridGenerator.coordinates
@@ -93,7 +93,6 @@ path = []
 path.append(coordinates[ind_now].tolist())
 
 for i in range(4):
-
     id = find_candidates_loc(ind_now, coordinates, distance_neighbour, distance_self)
     print("candidate loc: ", id)
     print(path)
