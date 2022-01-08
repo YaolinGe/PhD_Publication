@@ -2,7 +2,7 @@
 This script only contains the knowledge node
 Author: Yaolin Ge
 Contact: yaolin.ge@ntnu.no
-Date: 2022-01-05
+Date: 2022-01-05 ~ 2022-01-08
 """
 
 from usr_func import *
@@ -10,17 +10,21 @@ from usr_func import *
 
 class Knowledge:
 
-    def __init__(self, coordinates, mu, Sigma, threshold_salinity, kernel, ind_prev,
-                 ind_now, distance_neighbour, distance_self):
+    def __init__(self, coordinates, polygon, mu, Sigma, threshold_salinity, kernel, ind_prev,
+                 ind_now, distance_lateral, distance_vertical, distance_tolerance, distance_self):
         # knowing
         self.coordinates = coordinates
+        self.polygon = polygon
         self.mu = mu
         self.Sigma = Sigma
         self.excursion_prob = None
 
         self.ind_prev = ind_prev
         self.ind_now = ind_now
-        self.distance_neighbours = distance_neighbour
+        self.distance_lateral = distance_lateral
+        self.distance_vertical = distance_vertical
+        self.distance_tolerance = distance_tolerance
+        self.distance_neighbours = np.sqrt(distance_lateral ** 2 + distance_vertical ** 2) + distance_tolerance
         self.distance_self = distance_self
         self.threshold_salinity = threshold_salinity
         self.kernel = kernel

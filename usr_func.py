@@ -85,3 +85,8 @@ def get_grid_ind_at_nearest_loc(loc, coordinates):
     return ind
 
 
+def isEven(value):
+    if value % 2 == 0:
+        return True
+    else:
+        return False

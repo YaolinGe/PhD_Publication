@@ -2,7 +2,7 @@
 This script generates the next waypoint based on the current knowledge and previous path
 Author: Yaolin Ge
 Contact: yaolin.ge@ntnu.no
-Date: 2022-01-05 ~ 2022-01-06
+Date: 2022-01-05 ~ 2022-01-08
 """
 
 
@@ -11,6 +11,7 @@ from Nidelva.Simulation.Plotter.KnowledgePlot import KnowledgePlot
 from Nidelva.Simulation.Plotter.SimulationResultsPlot import SimulationResultsPlot
 from Nidelva.Simulation.ES_Strategies.PathPlanner_Myopic3D import MyopicPlanning_3D
 from Nidelva.Simulation.ES_Strategies.PathPlanner_Myopic2D import MyopicPlanning_2D
+from Nidelva.Simulation.ES_Strategies.PathPlanner_Lawnmower import LawnMowerPlanning
 from Nidelva.Simulation.ES_Strategies.Knowledge import Knowledge
 from Nidelva.Simulation.Field.Data.DataInterpolator import DataInterpolator
 from Nidelva.Simulation.Field.Grid.gridWithinPolygonGenerator import GridGenerator
@@ -27,7 +28,7 @@ DEPTH = [.5, 1, 1.5]
 DISTANCE_LATERAL = 120
 DISTANCE_VERTICAL = np.abs(DEPTH[1] - DEPTH[0])
 DISTANCE_TOLERANCE = 1
-DISTANCE_NEIGHBOUR = np.sqrt(DISTANCE_VERTICAL ** 2 + DISTANCE_LATERAL ** 2) + DISTANCE_TOLERANCE
+# DISTANCE_NEIGHBOUR =
 DISTANCE_SELF = np.abs(DEPTH[-1] - DEPTH[0])
 THRESHOLD = 28
 
@@ -60,17 +61,16 @@ class Simulator:
         mu_prior = vectorise(data_interpolator.dataset_interpolated["salinity"])
         matern_kernel = Matern_Kernel(coordinates=coordinates, sill=SILL, range_lateral=RANGE_LATERAL,
                                       range_vertical=RANGE_VERTICAL, nugget=NUGGET)
-        self.knowledge = Knowledge(coordinates=coordinates, mu=mu_prior, Sigma=matern_kernel.Sigma,
+        self.knowledge = Knowledge(coordinates=coordinates, polygon=self.polygon, mu=mu_prior, Sigma=matern_kernel.Sigma,
                                    threshold_salinity=THRESHOLD, kernel=matern_kernel, ind_prev=[], ind_now=[],
-                                   distance_neighbour=DISTANCE_NEIGHBOUR, distance_self=DISTANCE_SELF)
+                                   distance_lateral=DISTANCE_LATERAL, distance_vertical=DISTANCE_VERTICAL,
+                                   distance_tolerance=DISTANCE_TOLERANCE, distance_self=DISTANCE_SELF)
 
         self.ground_truth = np.linalg.cholesky(self.knowledge.Sigma) @ \
                             vectorise(np.random.randn(self.knowledge.coordinates.shape[0])) + self.knowledge.mu
         t2 = time.time()
         print("Simulation config is done, time consumed: ", t2 - t1)
 
-
-    def run_2d(self):
         self.starting_loc = [63.46, 10.41, 1.]
         self.ind_start = get_grid_ind_at_nearest_loc(self.starting_loc, self.knowledge.coordinates) # get nearest neighbour
         self.knowledge.ind_prev = self.knowledge.ind_now = self.ind_start
@@ -84,6 +84,9 @@ class Simulator:
                                               self.knowledge.threshold_salinity)
         KnowledgePlot(knowledge=self.knowledge, vmin=20, vmax=30, filename="field_ground_truth")
         '''
+
+
+    def run_2d(self):
 
         self.knowledge = Sampler(self.knowledge, self.ground_truth, self.ind_start).Knowledge # knowledge for 2d simulation
 
@@ -115,15 +118,6 @@ class Simulator:
                                                      self.knowledge.coordinates)  # get nearest neighbour
         self.knowledge.ind_prev = self.knowledge.ind_now = self.ind_start
 
-        ''' Only used for plotting true field and prior field
-        self.knowledge.excursion_prob = EP_1D(self.knowledge.mu, self.knowledge.Sigma,
-                                              self.knowledge.threshold_salinity)
-        KnowledgePlot(knowledge=self.knowledge, vmin=16, vmax=30, filename="field_prior")
-        self.knowledge.mu = self.ground_truth
-        self.knowledge.excursion_prob = EP_1D(self.knowledge.mu, self.knowledge.Sigma,
-                                              self.knowledge.threshold_salinity)
-        KnowledgePlot(knowledge=self.knowledge, vmin=20, vmax=30, filename="field_ground_truth")
-        '''
 
         self.knowledge = Sampler(self.knowledge, self.ground_truth, self.ind_start).Knowledge  # knowledge for 3d simulation
 
@@ -146,13 +140,30 @@ class Simulator:
             # SlicerPlot(coordinates=self.knowledge.coordinates, value=self.knowledge.mu)
         print(self.knowledge.integratedBernoulliVariance)
 
+    def run_lawn_mower(self):
+        self.lawn_mower_path_3d = LawnMowerPlanning(knowledge=self.knowledge).lawn_mower_path_3d
+        self.starting_loc = self.lawn_mower_path_3d[0, :]
+        self.ind_start = get_grid_ind_at_nearest_loc(self.starting_loc, self.knowledge.coordinates)  # get nearest neighbour
+        self.knowledge.ind_prev = self.knowledge.ind_now = self.ind_start
+        self.knowledge = Sampler(self.knowledge, self.ground_truth, self.ind_start).Knowledge  # knowledge for 3d simulation
+        for i in range(self.steps):
+            lat_next, lon_next, depth_next = self.lawn_mower_path_3d[i, :]
+            ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next],self.knowledge.coordinates)
+            self.knowledge.step_no = i
+
+            self.knowledge = Sampler(self.knowledge, self.ground_truth, ind_sample).Knowledge
+
+        pass
+
 
 if __name__ == "__main__":
     a = Simulator(steps=30)
     a.run_2d()
     b = Simulator(steps=30)
     b.run_3d()
-    SimulationResultsPlot(knowledges=[a.knowledge, b.knowledge], filename="Comparison")
+    c = Simulator(steps=30)
+    c.run_lawn_mower()
+    SimulationResultsPlot(knowledges=[a.knowledge, b.knowledge, c.knowledge], filename="Comparison")
 
 
 
