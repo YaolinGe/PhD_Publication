@@ -8,7 +8,7 @@ from Nidelva.Simulation.ES_Strategies.PathPlanner_Myopic import MyopicPlanning
 from Nidelva.Simulation.ES_Strategies.Knowledge import Knowledge
 from Nidelva.Simulation.Field.Data.DataInterpolator import DataInterpolator
 from Nidelva.Simulation.Field.Grid.gridWithinPolygonGenerator import GridGenerator
-from Nidelva.Simulation.GP_kernel.Matern_kernel import Matern_Kernel
+from Nidelva.Simulation.GP_kernel.Matern_kernel import MaternKernel
 
 import matplotlib.pyplot as plt
 from usr_func import *
@@ -27,7 +27,7 @@ coordinates = np.array(coordinates)
 data_interpolator = DataInterpolator(coordinates = coordinates)
 dataset_interpolated = data_interpolator.dataset_interpolated
 
-matern_kernel = Matern_Kernel(coordinates=coordinates, sill=.5, range_lateral=550, range_vertical=2, nugget=.04)
+matern_kernel = MaternKernel(coordinates=coordinates, sill=.5, range_lateral=550, range_vertical=2, nugget=.04)
 
 knowledge = Knowledge(coordinates=coordinates, mu=vectorise(dataset_interpolated["salinity"]),
                       Sigma=matern_kernel.Sigma, threshold_salinity=28, kernel=matern_kernel, ind_prev=0,

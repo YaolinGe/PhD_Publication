@@ -10,7 +10,7 @@ Usage:
 coordinates = [lat, lon, depth] # can be array
 dataset_interpolated = DataInterpolator(coordinates).dataset_interpolated
 """
-
+# TODO I have found that this is not universal, needs to be more thought of, not just for one case, for many cases in the future
 
 import pandas as pd
 import time

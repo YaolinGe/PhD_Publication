@@ -8,7 +8,7 @@ Date: 2022-01-05
 from usr_func import *
 
 
-class Matern_Kernel:
+class MaternKernel:
 
     def __init__(self, coordinates, sill, range_lateral, range_vertical, nugget):
         self.sill = sill

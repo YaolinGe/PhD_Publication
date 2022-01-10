@@ -9,6 +9,7 @@ Date: 2022-01-07
 import pandas as pd
 from datetime import datetime
 from usr_func import *
+import os
 import warnings
 
 
@@ -19,7 +20,10 @@ class AUVDataIntegrator:
             raise ValueError(filename + " is not a valid filename, please check")
         self.datapath = datapath
         self.filename = filename
-        self.save_data()
+        if not os.path.exists(self.datapath + filename + ".csv"):
+            self.save_data()
+        self.load_data()
+        # self.save_data()
 
     def load_raw_data(self):
         # % Data extraction from the raw data
@@ -66,7 +70,7 @@ class AUVDataIntegrator:
         self.group_raw_data_based_on_timestamp()
         self.extract_all_data()
 
-        time_mission = xauv = yauv = zauv = dauv = sal_auv = temp_auv = lat_auv = lon_auv = []
+        time_mission, xauv, yauv, zauv, dauv, sal_auv, temp_auv, lat_auv, lon_auv = [[] for _ in range(9)]
 
         for i in range(len(self.time_loc)):
             if np.any(self.time_sal.isin([self.time_loc.iloc[i]])) and np.any(self.time_temp.isin([self.time_loc.iloc[i]])):
@@ -84,37 +88,20 @@ class AUVDataIntegrator:
                 print(datetime.fromtimestamp(self.time_loc.iloc[i]))
                 continue
 
-        # ====== This section converts AUV coordinates from WGS84 back to rotated grid coordinates
-        lat4, lon4 = 63.446905, 10.419426  # right bottom corner
-        alpha = deg2rad(60)
-        warnings.warn("The origin is set to be " + str(lat4) + str(lon4) + ", rotational angle is " + str(alpha) + "\n It only applies to case Nidelva")
-
-        lat_auv = np.array(lat_auv).reshape(-1, 1)
-        lon_auv = np.array(lon_auv).reshape(-1, 1)
-        Dx = deg2rad(lat_auv - lat4) / 2 / np.pi * circumference
-        Dy = deg2rad(lon_auv - lon4) / 2 / np.pi * circumference * np.cos(deg2rad(lat_auv))
-
-        xauv = np.array(xauv).reshape(-1, 1)
-        yauv = np.array(yauv).reshape(-1, 1)
-
-        Rc = np.array([[np.cos(alpha), -np.sin(alpha)], [np.sin(alpha), np.cos(alpha)]])
-        TT = (Rc @ np.hstack((Dx, Dy)).T).T
-        xauv_new = TT[:, 0].reshape(-1, 1)
-        yauv_new = TT[:, 1].reshape(-1, 1)
-
-        zauv = np.array(zauv).reshape(-1, 1)
-        dauv = np.array(dauv).reshape(-1, 1)
-        sal_auv = np.array(sal_auv).reshape(-1, 1)
-        temp_auv = np.array(temp_auv).reshape(-1, 1)
-        time_mission = np.array(time_mission).reshape(-1, 1)
-
         lat_auv, lon_auv, xauv, yauv, zauv, dauv, sal_auv, temp_auv, time_mission = map(vectorise,
                                                                                         [lat_auv, lon_auv, xauv, yauv, zauv,
                                                                                          dauv, sal_auv, temp_auv, time_mission])
-
         self.datasheet = np.hstack((time_mission, lat_auv, lon_auv, xauv, yauv, zauv, dauv, sal_auv, temp_auv))
-        # self.datasheet = np.hstack((time_mission, lat_auv, lon_auv, xauv, yauv, zauv, dauv, sal_auv, temp_auv))
         df = pd.DataFrame(self.datasheet, columns=["timestamp", "lat", "lon", "x", "y", "z", "depth", "salinity", "temperature"])
         df.to_csv(self.datapath+self.filename+".csv", index=False)
-        # np.savetxt(figpath + "../data.txt", datasheet, delimiter = ",")
         print("Data is saved successfully!")
+
+    def load_data(self):
+        self.datasheet = pd.read_csv(self.datapath + self.filename + ".csv")
+
+    @property
+    def data(self):
+        return self.datasheet
+
+
+

@@ -15,7 +15,7 @@ from Nidelva.Simulation.ES_Strategies.PathPlanner_Lawnmower import LawnMowerPlan
 from Nidelva.Simulation.ES_Strategies.Knowledge import Knowledge
 from Nidelva.Simulation.Field.Data.DataInterpolator import DataInterpolator
 from Nidelva.Simulation.Field.Grid.gridWithinPolygonGenerator import GridGenerator
-from Nidelva.Simulation.GP_kernel.Matern_kernel import Matern_Kernel
+from Nidelva.Simulation.GP_kernel.Matern_kernel import MaternKernel
 from Nidelva.Simulation.Simulator.Sampler import Sampler
 from usr_func import *
 import time
@@ -59,8 +59,8 @@ class Simulator:
         coordinates = gridGenerator.coordinates
         data_interpolator = DataInterpolator(coordinates=coordinates)
         mu_prior = vectorise(data_interpolator.dataset_interpolated["salinity"])
-        matern_kernel = Matern_Kernel(coordinates=coordinates, sill=SILL, range_lateral=RANGE_LATERAL,
-                                      range_vertical=RANGE_VERTICAL, nugget=NUGGET)
+        matern_kernel = MaternKernel(coordinates=coordinates, sill=SILL, range_lateral=RANGE_LATERAL,
+                                     range_vertical=RANGE_VERTICAL, nugget=NUGGET)
         self.knowledge = Knowledge(coordinates=coordinates, polygon=self.polygon, mu=mu_prior, Sigma=matern_kernel.Sigma,
                                    threshold_salinity=THRESHOLD, kernel=matern_kernel, ind_prev=[], ind_now=[],
                                    distance_lateral=DISTANCE_LATERAL, distance_vertical=DISTANCE_VERTICAL,
