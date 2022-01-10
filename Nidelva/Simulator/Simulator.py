@@ -5,6 +5,7 @@ import pandas as pd
 
 from usr_func import *
 
+
 class Simulator:
 
     sinmod_path = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Data/Nidelva/SINMOD_DATA/sinmod_ave.h5"
@@ -13,7 +14,6 @@ class Simulator:
     lat_origin, lon_origin = 63.448, 10.4  # origin location
     depth_sim = [0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5.]
     # depth_limit = 5 # depth == 5 [m]
-
 
     def __init__(self):
         print("Hello world")
@@ -58,20 +58,8 @@ class Simulator:
         # def get_distance_matrix(self):
             # xgrid, ygrid = latlon2xy(self.lat_grid, self.lon_grid, self.lat_origin, self.lon_origin)
 
-
-
-
-
-
-
-
-
-
-
-
 if __name__ == "__main__":
     a = Simulator()
-
 
 #%%
 plt.scatter(a.lon, a.lat, c = a.salinity[0, :, :], cmap = "Paired", vmin = 0, vmax = 30)
@@ -97,5 +85,4 @@ plt.show()
 # plt.show()
 
 #%%
-
 

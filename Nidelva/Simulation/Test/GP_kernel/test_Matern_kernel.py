@@ -5,7 +5,7 @@ Date: 2022-01-05
 """
 
 from Nidelva.Simulation.Field.Grid.gridWithinPolygonGenerator import GridGenerator
-from Nidelva.Simulation.GP_kernel.Matern_kernel import Matern_Kernel
+from Nidelva.Simulation.GP_kernel.Matern_kernel import MaternKernel
 
 import matplotlib.pyplot as plt
 from usr_func import *
@@ -23,7 +23,7 @@ for i in range(grid.shape[0]):
 coordinates = np.array(coordinates)
 
 
-matern_cov = Matern_Kernel(coordinates=coordinates, sill=.5, range_lateral=550, range_vertical=2, nugget=.04).Sigma
+matern_cov = MaternKernel(coordinates=coordinates, sill=.5, range_lateral=550, range_vertical=2, nugget=.04).Sigma
 
 
 #%%
