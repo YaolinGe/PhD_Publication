@@ -12,8 +12,8 @@ import warnings
 class GridGenerator:
 
     def __init__(self, gridConfig):
-        self.grid_coordinates = []
-        self.grid_xyz = []
+        self.WGScoordinages_grid = []
+        self.xyz_grid_usr = []
         self.gridConfig = gridConfig
         self.getGridCoordinates()
 
@@ -24,27 +24,25 @@ class GridGenerator:
         for i in range(len(grid_x)):
             for j in range(len(grid_y)):
                 for k in range(len(grid_z)):
-                    self.grid_xyz.append([grid_x[i], grid_y[j], grid_z[k]])
-        self.grid_xyz = np.array(self.grid_xyz)
+                    self.xyz_grid_usr.append([grid_x[i], grid_y[j], grid_z[k]])
+        self.xyz_grid_usr = np.array(self.xyz_grid_usr)
 
     def getGridCoordinates(self):
         self.getGridXYZ()
-        RotationalMatrix = np.array([[np.cos(self.gridConfig.angle_rotation), np.sin(self.gridConfig.angle_rotation), 0],
-                                    [-np.sin(self.gridConfig.angle_rotation), np.cos(self.gridConfig.angle_rotation), 0],
-                                    [0, 0, 1]])
-        print(RotationalMatrix)
-        self.grid_xyz_rotated = (RotationalMatrix @ self.grid_xyz.T).T
-        grid_lat, grid_lon = xy2latlon(self.grid_xyz_rotated[:, 0], self.grid_xyz_rotated[:, 1], self.gridConfig.lat_pivot, self.gridConfig.lon_pivot)
-        self.grid_coordinates = np.hstack((vectorise(grid_lat), vectorise(grid_lon), vectorise(self.grid_xyz_rotated[:, 2])))
-        self.grid_comparison = np.vstack((self.grid_xyz, self.grid_xyz_rotated))
+        RotationalMatrix_USR2WGS = getRotationalMatrix_USR2WGS(self.gridConfig.angle_rotation)
+        print(RotationalMatrix_USR2WGS)
+        self.xyz_grid_wgs = (RotationalMatrix_USR2WGS @ self.xyz_grid_usr.T).T
+        grid_lat, grid_lon = xy2latlon(self.xyz_grid_wgs[:, 0], self.xyz_grid_wgs[:, 1], self.gridConfig.lat_pivot, self.gridConfig.lon_pivot)
+        self.WGScoordinages_grid = np.hstack((vectorise(grid_lat), vectorise(grid_lon), vectorise(self.xyz_grid_wgs[:, 2])))
+        self.grid_comparison = np.vstack((self.xyz_grid_usr, self.xyz_grid_wgs))
 
     @property
     def xyz(self):
-        return self.grid_xyz
+        return self.xyz_grid_usr
 
     @property
     def coordinates(self):
-        return self.grid_coordinates
+        return self.WGScoordinages_grid
 
 
 

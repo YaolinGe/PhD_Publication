@@ -90,3 +90,23 @@ def isEven(value):
         return True
     else:
         return False
+
+
+def round2base(x, base=1.):
+    return base * np.round(x/base)
+
+
+
+def getRotationalMatrix_WGS2USR(angle):
+    R = np.array([[np.cos(angle), -np.sin(angle), 0],
+                  [np.sin(angle), np.cos(angle), 0],
+                  [0, 0, 1]])
+    return R
+
+
+def getRotationalMatrix_USR2WGS(angle):
+    R = np.array([[np.cos(angle), np.sin(angle), 0],
+                  [-np.sin(angle), np.cos(angle), 0],
+                  [0, 0, 1]])
+    return R
+

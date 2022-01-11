@@ -13,19 +13,15 @@ from Nidelva.Simulation.Plotter.Scatter3dPlot import Scatter3DPlot
 
 class LawnMowerPlanning:
 
-    lawn_mower_path_2d = []
-    lawn_mower_path_3d = []
-
     def __init__(self, knowledge):
         warnings.warn("Lawn mower distance between each leg is DISTANCE_LATERAL, it can be modified if needed")
         warnings.warn("Lawn mower is set to be vertical as default, it can be horizontal as well")
         self.knowledge = knowledge
-        self.build_3d_lawn_mower()
+        # self.build_3d_lawn_mower()
 
     def build_bigger_rectangular_box(self):
         self.box_lat_min, self.box_lon_min = map(np.amin, [self.knowledge.polygon[:, 0], self.knowledge.polygon[:, 1]])
         self.box_lat_max, self.box_lon_max = map(np.amax, [self.knowledge.polygon[:, 0], self.knowledge.polygon[:, 1]])
-        pass
 
     def get_polygon_path(self):
         self.polygon_path = mplPath.Path(self.knowledge.polygon)
@@ -38,6 +34,7 @@ class LawnMowerPlanning:
         self.x, self.y = map(np.arange, [0, 0], [XRANGE, YRANGE], [self.knowledge.distance_lateral, self.knowledge.distance_lateral])
 
     def build_2d_lawn_mower(self):
+        self.lawn_mower_path_2d = []
         self.get_polygon_path()
         self.build_bigger_rectangular_box()
         self.discretise_the_grid()
@@ -55,6 +52,7 @@ class LawnMowerPlanning:
         # self.lawn_mower_path_2d = np.array(self.lawn_mower_path_2d)
 
     def build_3d_lawn_mower(self):
+        self.lawn_mower_path_3d = []
         self.build_2d_lawn_mower()
         self.get_unique_depth_layer()
         for k in range(len(self.depth)):
@@ -70,18 +68,4 @@ class LawnMowerPlanning:
                                                     self.depth[k]])
         self.lawn_mower_path_3d = np.array(self.lawn_mower_path_3d)
         print(self.lawn_mower_path_3d)
-
-    def find_next_waypoint(self):
-
-        pass
-
-
-
-
-
-
-
-
-
-
 
