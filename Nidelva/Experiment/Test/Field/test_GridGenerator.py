@@ -16,9 +16,9 @@ zlim = [0.5, 2.5]
 gridConfig = GridConfig(pivot, angle_rotation, nx, ny, nz, xlim, ylim, zlim)
 
 a = GridGenerator(gridConfig)
-Scatter3DPlot(a.grid_xyz, "grid_xyz")
+Scatter3DPlot(a.xyz_grid_usr, "grid_xyz")
 Scatter3DPlot(a.grid_comparison, "grid_xyz_rotation_comparison")
-Scatter3DPlot(a.grid_xyz_rotated, "grid_rotated")
+Scatter3DPlot(a.xyz_grid_wgs, "grid_rotated")
 
 
 def plotGridonMap(grid):
@@ -47,7 +47,7 @@ def plotGridonMap(grid):
     color_scatter(gmap, grid[:, 0], grid[:, 1], np.zeros_like(grid[:, 0]), size=20, colormap='hsv')
     gmap.draw("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Missions/MapPlot/map.html")
 
-plotGridonMap(a.grid_coordinates)
+plotGridonMap(a.WGScoordinages_grid)
 import os
 os.system("open -a \"Google Chrome\" /Users/yaoling/OneDrive\ -\ NTNU/MASCOT_PhD/Missions/MapPlot/map.html")
 

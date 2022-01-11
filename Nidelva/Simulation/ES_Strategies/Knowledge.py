@@ -41,6 +41,7 @@ class Knowledge:
         self.integratedBernoulliVariance = []
         self.rootMeanSquaredError = []
         self.expectedVariance = []
+        self.distance_travelled = [0]
 
 
 

@@ -1,11 +1,17 @@
 
 
-class SimulationResult:
+class SimulationResultContainer:
 
-    def __init__(self, expectedIntegratedBernoulliVariance, rootMeanSquaredError, expectedVariance):
+    def __init__(self):
 
-        self.expectedIntegratedBernoulliVariance = expectedIntegratedBernoulliVariance
-        self.rootMeanSquaredError = rootMeanSquaredError
-        self.expectedVariance = expectedVariance
+        self.expectedIntegratedBernoulliVariance = []
+        self.rootMeanSquaredError = []
+        self.expectedVariance = []
+        self.distanceTravelled = []
 
+    def append(self, knowledge):
+        self.expectedIntegratedBernoulliVariance.append(knowledge.integratedBernoulliVariance)
+        self.rootMeanSquaredError.append(knowledge.rootMeanSquaredError)
+        self.expectedVariance.append(knowledge.expectedVariance)
+        self.distanceTravelled.append(knowledge.distance_travelled)
 

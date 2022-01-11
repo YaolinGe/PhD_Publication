@@ -21,21 +21,12 @@ class MyopicPlanning_2D:
         self.find_next_waypoint()
 
     def find_candidates_loc(self):
-        '''
-        find the candidates location based on distance coverage
-        '''
         delta_x, delta_y = latlon2xy(self.knowledge.coordinates[:, 0], self.knowledge.coordinates[:, 1],
                                      self.knowledge.coordinates[self.knowledge.ind_now, 0],
                                      self.knowledge.coordinates[self.knowledge.ind_now, 1])  # using the distance
-
-        # delta_z = self.knowledge.coordinates[:, 2] - self.knowledge.coordinates[self.knowledge.ind_now, 2]  # depth distance in z-direction
         distance_vector = np.sqrt(delta_x ** 2 + delta_y ** 2)
-
-        # print("distance_neighbour: ", self.knowledge.distance_neighbours)
         self.knowledge.ind_cand = np.where((distance_vector <= self.knowledge.distance_neighbours) *
                                            (distance_vector > self.knowledge.distance_self))[0]
-        # print("distance_vector: ", distance_vector[self.knowledge.ind_cand])
-        # print("before filtering: ", self.knowledge.ind_cand)
 
     def filter_candidates_loc(self):
         id = []  # ind vector for containing the filtered desired candidate location
@@ -75,18 +66,11 @@ class MyopicPlanning_2D:
             eibv.append(EIBV_1D(self.knowledge.threshold_salinity, self.knowledge.mu,
                                 self.knowledge.Sigma, F, self.knowledge.kernel.R))
         t2 = time.time()
-
         if len(eibv) == 0:  # in case it is in the corner and not found any valid candidate locations
-            print("Redirecting new location")
-            # dist_normalised = self.get_normalised_distance_vector() # it moves to the location with the mean of both distance and ep
-            # self.ind_next = (np.abs(self.EP_1D(mu, Sig, self.Threshold_S) - .5) + dist_normalised).argmin()  # if not found next, use the other one
             self.knowledge.ind_next = np.abs(EP_1D(self.knowledge.mu, self.knowledge.Sigma,
                                                    self.knowledge.threshold_salinity) - .5).argmin()
         else:
-            # print("Neighbouring location has next waypoint")
             self.knowledge.ind_next = self.knowledge.ind_cand_filtered[np.argmin(np.array(eibv))]
-            # print("knowledge ibv: ", self.knowledge.ibv)
-            self.knowledge.integratedBernoulliVariance.append(np.amin(eibv))
         print("Finding next waypoint takes: ", t2 - t1)
 
     @property
