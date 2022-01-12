@@ -2,8 +2,8 @@
 
 class SimulationResultContainer:
 
-    def __init__(self):
-
+    def __init__(self, strategyname):
+        self.strategyname = strategyname
         self.expectedIntegratedBernoulliVariance = []
         self.rootMeanSquaredError = []
         self.expectedVariance = []

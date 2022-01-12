@@ -75,7 +75,7 @@ def interpolate_3d(x, y, z, value):
 
 class KnowledgePlot:
 
-    def __init__(self, knowledge=None, vmin=28, vmax=30, filename="mean"):
+    def __init__(self, knowledge=None, vmin=28, vmax=30, filename="mean", html=False):
         if knowledge is None:
             raise ValueError("")
         self.knowledge = knowledge
@@ -83,6 +83,7 @@ class KnowledgePlot:
         self.vmin = vmin
         self.vmax = vmax
         self.filename = filename
+        self.html = html
         self.plot()
 
     def plot(self):
@@ -152,35 +153,37 @@ class KnowledgePlot:
             row=1, col=3
         )
 
-        fig.add_trace(go.Scatter3d(
-            x=self.knowledge.coordinates[self.knowledge.ind_cand, 1],
-            y=self.knowledge.coordinates[self.knowledge.ind_cand, 0],
-            z=-self.knowledge.coordinates[self.knowledge.ind_cand, 2],
-            mode='markers',
-            marker=dict(
-                size=15,
-                color="white",
-                showscale=False,
+        if len(self.knowledge.ind_cand):
+            fig.add_trace(go.Scatter3d(
+                x=self.knowledge.coordinates[self.knowledge.ind_cand, 1],
+                y=self.knowledge.coordinates[self.knowledge.ind_cand, 0],
+                z=-self.knowledge.coordinates[self.knowledge.ind_cand, 2],
+                mode='markers',
+                marker=dict(
+                    size=15,
+                    color="white",
+                    showscale=False,
+                ),
+                showlegend=False,
             ),
-            showlegend=False,
-        ),
-            row='all', col='all'
-        )
+                row='all', col='all'
+            )
 
-        fig.add_trace(go.Scatter3d(
-            x=self.knowledge.coordinates[self.knowledge.ind_cand_filtered, 1],
-            y=self.knowledge.coordinates[self.knowledge.ind_cand_filtered, 0],
-            z=-self.knowledge.coordinates[self.knowledge.ind_cand_filtered, 2],
-            mode='markers',
-            marker=dict(
-                size=10,
-                color="blue",
-                showscale=False,
+        if len(self.knowledge.ind_cand_filtered):
+            fig.add_trace(go.Scatter3d(
+                x=self.knowledge.coordinates[self.knowledge.ind_cand_filtered, 1],
+                y=self.knowledge.coordinates[self.knowledge.ind_cand_filtered, 0],
+                z=-self.knowledge.coordinates[self.knowledge.ind_cand_filtered, 2],
+                mode='markers',
+                marker=dict(
+                    size=10,
+                    color="blue",
+                    showscale=False,
+                ),
+                showlegend=False, # remove all unnecessary trace names
             ),
-            showlegend=False, # remove all unnecessary trace names
-        ),
-            row='all', col='all'
-        )
+                row='all', col='all'
+            )
 
         if self.knowledge.trajectory:
             fig.add_trace(go.Scatter3d(
@@ -256,14 +259,11 @@ class KnowledgePlot:
         )
 
         # fig.update_scenes(xaxis_visible=False, yaxis_visible=False,zaxis_visible=False)
+        if self.html:
+            plotly.offline.plot(fig, filename = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Simulation/"+self.filename+".html", auto_open = False)
+            # os.system("open -a \"Google Chrome\" /Users/yaoling/OneDrive\ -\ NTNU/MASCOT_PhD/Publication/Nidelva/fig/Simulation/"+self.filename+".html")
+        fig.write_image("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Simulation/"+self.filename+".png", width=1980, height=1080, engine = "orca")
 
-        plotly.offline.plot(fig, filename = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Simulation/"+self.filename+".html", auto_open = False)
-        # os.system("open -a \"Google Chrome\" /Users/yaoling/OneDrive\ -\ NTNU/MASCOT_PhD/Publication/Nidelva/fig/Simulation/"+self.filename+".html")
-        # fig.write_image("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Simulation/Myopic/S_{:04d}.png".format(self.knowledge.step_no), width=1980, height=1080, engine = "orca")
-
-
-# KnowledgePlot(a.knowledge)
-# print("finished")
 
 
 
