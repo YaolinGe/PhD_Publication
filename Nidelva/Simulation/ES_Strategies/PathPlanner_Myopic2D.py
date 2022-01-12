@@ -20,13 +20,41 @@ class MyopicPlanning_2D:
         self.knowledge = knowledge
         self.find_next_waypoint()
 
+    def find_next_waypoint(self):
+        self.find_candidates_loc()
+        self.filter_candidates_loc()
+        t1 = time.time()
+        id = self.knowledge.ind_cand_filtered
+        eibv = []
+        for k in range(len(id)):
+            F = getFVector(id[k], self.knowledge.coordinates.shape[0])
+            eibv.append(EIBV_1D(self.knowledge.threshold_salinity, self.knowledge.mu,
+                                self.knowledge.Sigma, F, self.knowledge.kernel.R))
+        t2 = time.time()
+        if len(eibv) == 0:  # in case it is in the corner and not found any valid candidate locations
+            self.knowledge.ind_next = np.abs(EP_1D(self.knowledge.mu, self.knowledge.Sigma,
+                                                   self.knowledge.threshold_salinity) - .5).argmin()
+            self.next_loc = self.knowledge.coordinates[self.knowledge.ind_next, :]
+            self.next_loc[2] = np.mean(self.knowledge.coordinates[:, 2])
+            self.ind_next = get_grid_ind_at_nearest_loc(self.next_loc, self.knowledge.coordinates)
+        else:
+            self.knowledge.ind_next = self.knowledge.ind_cand_filtered[np.argmin(np.array(eibv))]
+        print("Finding next waypoint takes: ", t2 - t1)
+
     def find_candidates_loc(self):
-        delta_x, delta_y = latlon2xy(self.knowledge.coordinates[:, 0], self.knowledge.coordinates[:, 1],
+        ind_middle_layer = np.where(self.knowledge.coordinates[:, 2] == np.mean(self.knowledge.coordinates[:, 2]))[0]
+        self.coordinates_middle_layer = self.knowledge.coordinates[ind_middle_layer, :]
+        delta_x, delta_y = latlon2xy(self.coordinates_middle_layer[:, 0], self.coordinates_middle_layer[:, 1],
                                      self.knowledge.coordinates[self.knowledge.ind_now, 0],
                                      self.knowledge.coordinates[self.knowledge.ind_now, 1])  # using the distance
         distance_vector = np.sqrt(delta_x ** 2 + delta_y ** 2)
-        self.knowledge.ind_cand = np.where((distance_vector <= self.knowledge.distance_neighbours) *
-                                           (distance_vector > self.knowledge.distance_self))[0]
+        # print(self.coordinates_middle_layer)
+        # print(ind_middle_layer)
+        self.knowledge.ind_cand = ind_middle_layer[np.where((distance_vector <= self.knowledge.distance_neighbours) *
+                                                   (distance_vector > self.knowledge.distance_self))[0]]
+        # print(np.where((distance_vector <= self.knowledge.distance_neighbours) *
+        #                                            (distance_vector > self.knowledge.distance_self))[0])
+        # print(self.knowledge.ind_cand)
 
     def filter_candidates_loc(self):
         id = []  # ind vector for containing the filtered desired candidate location
@@ -45,33 +73,12 @@ class MyopicPlanning_2D:
                                          self.knowledge.coordinates[self.knowledge.ind_now, 1])
                     vec2 = vectorise([dx2, dy2])
                     if np.dot(vec1.T, vec2) >= 0:
-                        # if dx2 == 0 and dy2 == 0:
-                        #     # print("Sorry, I cannot dive or float directly")
-                        #     pass
-                        # else:
                         id.append(self.knowledge.ind_cand[i])
+        print(id)
         id = np.unique(np.array(id))  # filter out repetitive candidate locations
         self.knowledge.ind_cand_filtered = id  # refresh old candidate location
         t2 = time.time()
         print("Filtering takes: ", t2 - t1)
-
-    def find_next_waypoint(self):
-        self.find_candidates_loc()
-        self.filter_candidates_loc()
-        t1 = time.time()
-        id = self.knowledge.ind_cand_filtered
-        eibv = []
-        for k in range(len(id)):
-            F = getFVector(id[k], self.knowledge.coordinates.shape[0])
-            eibv.append(EIBV_1D(self.knowledge.threshold_salinity, self.knowledge.mu,
-                                self.knowledge.Sigma, F, self.knowledge.kernel.R))
-        t2 = time.time()
-        if len(eibv) == 0:  # in case it is in the corner and not found any valid candidate locations
-            self.knowledge.ind_next = np.abs(EP_1D(self.knowledge.mu, self.knowledge.Sigma,
-                                                   self.knowledge.threshold_salinity) - .5).argmin()
-        else:
-            self.knowledge.ind_next = self.knowledge.ind_cand_filtered[np.argmin(np.array(eibv))]
-        print("Finding next waypoint takes: ", t2 - t1)
 
     @property
     def next_waypoint(self):

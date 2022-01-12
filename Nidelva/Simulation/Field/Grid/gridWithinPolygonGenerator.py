@@ -38,29 +38,6 @@ class GridGenerator:
         self.traverseField()
         self.getCoordinates()
 
-    def revisit(self, loc):
-        '''
-        function determines whether it revisits the points it already has
-        '''
-        temp = np.array(self.grid)
-        if len(self.grid) > 0:
-            dist_min = np.min(np.sqrt((temp[:, 0] - loc[0]) ** 2 + (temp[:, 1] - loc[1]) ** 2))
-            ind = np.argmin(np.sqrt((temp[:, 0] - loc[0]) ** 2 + (temp[:, 1] - loc[1]) ** 2))
-            if dist_min <= .00001:
-                return [True, ind]
-            else:
-                return [False, []]
-        else:
-            return [False, []]
-
-    def getNewLocations(self, loc):
-        '''
-        get new locations around the current location
-        '''
-        lat_new, lon_new = xy2latlon(self.distance_neighbour * np.sin(self.angle_neighbour),
-                                     self.distance_neighbour * np.cos(self.angle_neighbour), loc[0], loc[1])
-        return lat_new, lon_new
-
     def traverseField(self):
         lat_new, lon_new = self.getNewLocations(self.loc_start)
         start_node = []
@@ -79,6 +56,14 @@ class GridGenerator:
         else:
             print("{:d} grid points are generated, all are selected!".format(len(self.grid)))
         print("grid shape: ", self.grid.shape)
+
+    def getNewLocations(self, loc):
+        '''
+        get new locations around the current location
+        '''
+        lat_new, lon_new = xy2latlon(self.distance_neighbour * np.sin(self.angle_neighbour),
+                                     self.distance_neighbour * np.cos(self.angle_neighbour), loc[0], loc[1])
+        return lat_new, lon_new
 
     def traverseChildrenNodes(self, grid_node):
         if self.counter_grid > self.points_allowed:
@@ -101,6 +86,21 @@ class GridGenerator:
             else:
                 return gridNode(0, [], grid_node.subGrid_loc[i])
         return gridNode(0, [], grid_node.grid_loc)
+
+    def revisit(self, loc):
+        '''
+        function determines whether it revisits the points it already has
+        '''
+        temp = np.array(self.grid)
+        if len(self.grid) > 0:
+            dist_min = np.min(np.sqrt((temp[:, 0] - loc[0]) ** 2 + (temp[:, 1] - loc[1]) ** 2))
+            ind = np.argmin(np.sqrt((temp[:, 0] - loc[0]) ** 2 + (temp[:, 1] - loc[1]) ** 2))
+            if dist_min <= .00001:
+                return [True, ind]
+            else:
+                return [False, []]
+        else:
+            return [False, []]
 
     def getCoordinates(self):
         coordinates = []

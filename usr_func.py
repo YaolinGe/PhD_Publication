@@ -1,5 +1,7 @@
 import numpy as np
 from scipy.stats import mvn, norm
+import pathlib
+import os
 import matplotlib.pyplot as plt
 plt.rcParams["font.family"] = "Times New Roman"
 plt.rcParams.update({'font.size': 12})
@@ -109,4 +111,22 @@ def getRotationalMatrix_USR2WGS(angle):
                   [-np.sin(angle), np.cos(angle), 0],
                   [0, 0, 1]])
     return R
+
+
+# def checkfolder_append(path, filename):
+#     i = 0
+#     while os.path.exists(path + filename +"%s" % i):
+#         i += 1
+#     newpath = path + filename + "%s" % i
+#     if not os.path.exists(newpath):
+#         print(newpath + " is created")
+#         os.mkdir(newpath)
+#     else:
+#         print(newpath + " is already existed")
+
+
+def checkfolder(folder):
+    path = pathlib.Path(folder)
+    path.mkdir(parents=True, exist_ok=True)
+    print(folder + "is created")
 
