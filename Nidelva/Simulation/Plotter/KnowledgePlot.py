@@ -8,69 +8,17 @@ Date: 2022-01-06
 
 from usr_func import *
 import matplotlib.pyplot as plt
-from scipy.interpolate import griddata
-from scipy.interpolate import interpn
+
 import plotly.graph_objects as go
 import plotly
 from plotly.subplots import make_subplots
 import os
-from scipy.interpolate import NearestNDInterpolator
+
 # plotly.io.orca.config.executable = '/usr/local/bin/orca'
 # plotly.io.orca.config.save()
 
 from Nidelva.Simulation.Plotter.SlicerPlot import SlicerPlot
 
-
-def interpolate_2d(x, y, nx, ny, value, interpolation_method="linear"):
-    xmin, ymin = map(np.amin, [x, y])
-    xmax, ymax = map(np.amax, [x, y])
-    points = np.hstack((vectorise(x), vectorise(y)))
-    xv = np.linspace(xmin, xmax, nx)
-    yv = np.linspace(ymin, ymax, ny)
-    grid_x, grid_y = np.meshgrid(xv, yv)
-    grid_value = griddata(points, value, (grid_x, grid_y), method=interpolation_method)
-    return grid_x, grid_y, grid_value
-
-def refill_nan_values(data):
-    mask = np.where(~np.isnan(data))
-    interp = NearestNDInterpolator(np.transpose(mask), data[mask])
-    filled_data = interp(*np.indices(data.shape))
-    return filled_data
-
-def interpolate_3d(x, y, z, value):
-    z_layer = np.unique(z)
-    grid = []
-    values = []
-    nx = 50
-    ny = 50
-    nz = len(z_layer)
-    # values_smoothered = np.zeros([nx-2, ny-2, nz])
-    for i in range(len(z_layer)):
-        ind_layer = np.where(z == z_layer[i])[0]
-        # print("layer: ", z_layer[i])
-        grid_x, grid_y, grid_value = interpolate_2d(x[ind_layer], y[ind_layer], nx=nx, ny=ny, value=value[ind_layer], interpolation_method="cubic")
-        grid_value = refill_nan_values(grid_value)
-        # print("grid_x: ", grid_x.shape)
-        for j in range(grid_x.shape[0]):
-            for k in range(grid_x.shape[1]):
-                grid.append([grid_x[j, k], grid_y[j, k], z_layer[i]])
-                values.append(grid_value[j, k])
-                # values_smoothered[j-1, k-1, i] = grid_value[j, k]
-
-    grid = np.array(grid)
-    values = np.array(values)
-    # print(grid.shape)
-    # print(values.shape)
-    # print(np.any(np.isnan(values)))
-    # values_smoothered = gaussian_filter(values_smoothered, .0000001)
-    # vs = []
-    # for i in range(nz):
-    #     for j in range(nx):
-    #         for k in range(ny):
-    #             vs.append(values_smoothered[j, k, i])
-    # vs = np.array(vs)
-
-    return grid, values
 
 
 class KnowledgePlot:
