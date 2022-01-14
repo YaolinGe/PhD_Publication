@@ -3,6 +3,9 @@ from scipy.stats import mvn, norm
 import pathlib
 import os
 import matplotlib.pyplot as plt
+from scipy.interpolate import griddata
+from scipy.interpolate import interpn
+from scipy.interpolate import NearestNDInterpolator
 plt.rcParams["font.family"] = "Times New Roman"
 plt.rcParams.update({'font.size': 12})
 plt.rcParams.update({'font.style': 'oblique'})
@@ -117,4 +120,44 @@ def checkfolder(folder):
     path = pathlib.Path(folder)
     path.mkdir(parents=True, exist_ok=True)
     print(folder + "is created")
+
+
+def interpolate_2d(x, y, nx, ny, value, interpolation_method="linear"):
+    xmin, ymin = map(np.amin, [x, y])
+    xmax, ymax = map(np.amax, [x, y])
+    points = np.hstack((vectorise(x), vectorise(y)))
+    xv = np.linspace(xmin, xmax, nx)
+    yv = np.linspace(ymin, ymax, ny)
+    grid_x, grid_y = np.meshgrid(xv, yv)
+    grid_value = griddata(points, value, (grid_x, grid_y), method=interpolation_method)
+    return grid_x, grid_y, grid_value
+
+
+def refill_nan_values(data):
+    mask = np.where(~np.isnan(data))
+    interp = NearestNDInterpolator(np.transpose(mask), data[mask])
+    filled_data = interp(*np.indices(data.shape))
+    return filled_data
+
+
+def interpolate_3d(x, y, z, value):
+    z_layer = np.unique(z)
+    grid = []
+    values = []
+    nx = 50
+    ny = 50
+    nz = len(z_layer)
+    for i in range(len(z_layer)):
+        ind_layer = np.where(z == z_layer[i])[0]
+        grid_x, grid_y, grid_value = interpolate_2d(x[ind_layer], y[ind_layer], nx=nx, ny=ny, value=value[ind_layer], interpolation_method="cubic")
+        grid_value = refill_nan_values(grid_value)
+        for j in range(grid_x.shape[0]):
+            for k in range(grid_x.shape[1]):
+                grid.append([grid_x[j, k], grid_y[j, k], z_layer[i]])
+                values.append(grid_value[j, k])
+
+    grid = np.array(grid)
+    values = np.array(values)
+
+    return grid, values
 
