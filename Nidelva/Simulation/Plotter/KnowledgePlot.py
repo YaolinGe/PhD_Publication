@@ -118,23 +118,24 @@ class KnowledgePlot:
             ),
             row=1, col=1
         )
-
-        fig.add_trace(go.Volume(
-            x=points_std[:, 0],
-            y=points_std[:, 1],
-            z=-points_std[:, 2],
-            value=values_std.flatten(),
-            isomin=0,
-            isomax=1,
-            opacity=.1,
-            surface_count=30,
-            colorscale = "rdbu",
-            colorbar=dict(x=0.65, y=0.5, len=.5),
-            reversescale=True,
-            caps=dict(x_show=False, y_show=False, z_show=False),
-        ),
-            row=1, col=2
-        )
+        # print(values_std)
+        if len(values_std):
+            fig.add_trace(go.Volume(
+                x=points_std[:, 0],
+                y=points_std[:, 1],
+                z=-points_std[:, 2],
+                value=values_std.flatten(),
+                isomin=0,
+                isomax=1,
+                opacity=.1,
+                surface_count=30,
+                colorscale = "rdbu",
+                colorbar=dict(x=0.65, y=0.5, len=.5),
+                reversescale=True,
+                caps=dict(x_show=False, y_show=False, z_show=False),
+            ),
+                row=1, col=2
+            )
 
         fig.add_trace(go.Volume(
             x=points_ep[:, 0],
@@ -259,10 +260,11 @@ class KnowledgePlot:
         )
 
         # fig.update_scenes(xaxis_visible=False, yaxis_visible=False,zaxis_visible=False)
-        if self.html:
-            plotly.offline.plot(fig, filename = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Simulation/"+self.filename+".html", auto_open = False)
+        # if self.html:
+        # print("Save html")
+        plotly.offline.plot(fig, filename = self.filename+".html", auto_open = False)
             # os.system("open -a \"Google Chrome\" /Users/yaoling/OneDrive\ -\ NTNU/MASCOT_PhD/Publication/Nidelva/fig/Simulation/"+self.filename+".html")
-        fig.write_image("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Simulation/"+self.filename+".png", width=1980, height=1080, engine = "orca")
+        # fig.write_image(self.filename+".png", width=1980, height=1080, engine = "orca")
 
 
 

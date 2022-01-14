@@ -113,18 +113,6 @@ def getRotationalMatrix_USR2WGS(angle):
     return R
 
 
-# def checkfolder_append(path, filename):
-#     i = 0
-#     while os.path.exists(path + filename +"%s" % i):
-#         i += 1
-#     newpath = path + filename + "%s" % i
-#     if not os.path.exists(newpath):
-#         print(newpath + " is created")
-#         os.mkdir(newpath)
-#     else:
-#         print(newpath + " is already existed")
-
-
 def checkfolder(folder):
     path = pathlib.Path(folder)
     path.mkdir(parents=True, exist_ok=True)

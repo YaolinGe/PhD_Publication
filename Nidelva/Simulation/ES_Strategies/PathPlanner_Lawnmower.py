@@ -35,7 +35,7 @@ class LawnMowerPlanning:
                                                     self.lawn_mower_path_2d[i][1],
                                                     self.depth[k]])
         self.lawn_mower_path_3d = np.array(self.lawn_mower_path_3d)
-        print(self.lawn_mower_path_3d)
+        # print(self.lawn_mower_path_3d)
 
     def build_2d_lawn_mower(self):
         self.lawn_mower_path_2d = []
