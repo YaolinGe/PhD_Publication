@@ -37,7 +37,10 @@ RANGE_VERTICAL = 2
 NUGGET = .04
 # ==== End GP Config ====
 
-np.random.seed(0)
+# ==== Plot Config ======
+VMIN = 16
+VMAX = 30
+# ==== End Plot Config ==
 
 
 class Simulator:
@@ -45,10 +48,12 @@ class Simulator:
     knowledge = None
 
     def __init__(self, steps=10, random_seed=0):
+        print("Random seed: ", random_seed)
         self.seed = random_seed
         np.random.seed(self.seed)
         self.steps = steps
         self.simulation_config()
+        # self.save_benchmark_figure()
 
     def simulation_config(self):
         t1 = time.time()
@@ -73,50 +78,47 @@ class Simulator:
         t2 = time.time()
         print("Simulation config is done, time consumed: ", t2 - t1)
 
-        ''' Only used for plotting true field and prior field
-        self.knowledge.excursion_prob = EP_1D(self.knowledge.mu, self.knowledge.Sigma,
-                                              self.knowledge.threshold_salinity)
-        KnowledgePlot(knowledge=self.knowledge, vmin=16, vmax=30, filename="field_prior")
-        self.knowledge.mu = self.ground_truth
-        self.knowledge.excursion_prob = EP_1D(self.knowledge.mu, self.knowledge.Sigma,
-                                              self.knowledge.threshold_salinity)
-        KnowledgePlot(knowledge=self.knowledge, vmin=20, vmax=30, filename="field_ground_truth")
-        '''
+    def save_benchmark_figure(self):
+        foldername = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Simulation/Replicates/R_{:03d}/".format(self.seed)
+        checkfolder(foldername)
+        self.knowledge_prior = self.knowledge
+        self.knowledge_prior.excursion_prob = EP_1D(self.knowledge_prior.mu, self.knowledge_prior.Sigma, self.knowledge_prior.threshold_salinity)
+        KnowledgePlot(knowledge=self.knowledge_prior, vmin=VMIN, vmax=VMAX, filename=foldername+"Field_prior", html=False)
+        self.knowledge_ground_truth = self.knowledge
+        self.knowledge_ground_truth.mu = self.ground_truth
+        self.knowledge_ground_truth.excursion_prob = EP_1D(self.knowledge_ground_truth.mu, self.knowledge_ground_truth.Sigma, self.knowledge_ground_truth.threshold_salinity)
+        KnowledgePlot(knowledge=self.knowledge_ground_truth, vmin=VMIN, vmax=VMAX, filename=foldername+"Field_ground_truth", html=False)
 
     def run_2d(self):
         self.starting_loc = [63.46, 10.41, 1.]
         self.ind_start = get_grid_ind_at_nearest_loc(self.starting_loc, self.knowledge.coordinates) # get nearest neighbour
-        self.knowledge.ind_prev = self.knowledge.ind_now = self.ind_start
+        self.knowledge.ind_prev = self.knowledge.ind_now = self.ind_sample = self.ind_start
 
-        self.knowledge = Sampler(self.knowledge, self.ground_truth, self.ind_start).Knowledge # knowledge for 2d simulation
         foldername = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Simulation/Replicates/R_{:03d}/2D/".format(self.seed)
         checkfolder(foldername)
         for i in range(self.steps):
             print("Step No. ", i)
-            KnowledgePlot(knowledge=self.knowledge, vmin=20, vmax=30, filename=foldername+"Field_{:03d}".format(i), html=False)
+            self.knowledge = Sampler(self.knowledge, self.ground_truth, self.ind_sample).Knowledge
             lat_next, lon_next, depth_next = MyopicPlanning_2D(knowledge=self.knowledge).next_waypoint
-            ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next], self.knowledge.coordinates)
+            self.ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next], self.knowledge.coordinates)
             self.knowledge.step_no = i
-            self.knowledge = Sampler(self.knowledge, self.ground_truth, ind_sample).Knowledge
-        KnowledgePlot(knowledge=self.knowledge, vmin=20, vmax=30, filename=foldername + "Field_{:03d}".format(i),
-                      html=True)
+        KnowledgePlot(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX, filename=foldername + "Field_{:03d}".format(i),
+                      html=False)
 
     def run_3d(self):
         self.starting_loc = [63.46, 10.41, 1.]
         self.ind_start = get_grid_ind_at_nearest_loc(self.starting_loc, self.knowledge.coordinates) # get nearest neighbour
-        self.knowledge.ind_prev = self.knowledge.ind_now = self.ind_start
+        self.knowledge.ind_prev = self.knowledge.ind_now = self.ind_sample = self.ind_start
 
-        self.knowledge = Sampler(self.knowledge, self.ground_truth, self.ind_start).Knowledge  # knowledge for 3d simulation
-        foldername = "Replicates/" + str(self.seed) + "/3D/"
+        foldername = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Simulation/Replicates/R_{:03d}/3D/".format(self.seed)
         checkfolder(foldername)
         for i in range(self.steps):
             print("Step No. ", i)
-            KnowledgePlot(knowledge=self.knowledge, vmin=20, vmax=30, filename=foldername+"Field_{:03d}".format(i), html=False)
+            self.knowledge = Sampler(self.knowledge, self.ground_truth, self.ind_sample).Knowledge
             lat_next, lon_next, depth_next = MyopicPlanning_3D(knowledge=self.knowledge).next_waypoint
-            ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next],self.knowledge.coordinates)
+            self.ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next],self.knowledge.coordinates)
             self.knowledge.step_no = i
-            self.knowledge = Sampler(self.knowledge, self.ground_truth, ind_sample).Knowledge
-        KnowledgePlot(knowledge=self.knowledge, vmin=20, vmax=30, filename=foldername+"Field_{:03d}".format(i), html=True)
+        KnowledgePlot(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX, filename=foldername + "Field_{:03d}".format(i), html=False)
 
     def run_lawn_mower(self):
         LawnMowerPlanningSetup = LawnMowerPlanning(knowledge=self.knowledge)
@@ -126,7 +128,7 @@ class Simulator:
         ind_start = get_grid_ind_at_nearest_loc([lat_start, lon_start, depth_start], self.knowledge.coordinates)
         self.knowledge.ind_prev = self.knowledge.ind_now = ind_start
 
-        foldername = "Replicates/" + str(self.seed) + "/Lawnmower/"
+        foldername = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Simulation/Replicates/R_{:03d}/Lawnmower/".format(self.seed)
         checkfolder(foldername)
 
         for i in range(self.steps):
@@ -137,10 +139,5 @@ class Simulator:
             self.knowledge.step_no = i
             self.knowledge = Sampler(self.knowledge, self.ground_truth, ind_sample).Knowledge
 
-            KnowledgePlot(knowledge=self.knowledge, vmin=20, vmax=30, filename=foldername+"Field_{:03d}".format(i), html=False)
-            # KnowledgePlot(knowledge=self.knowledge, vmin=20, vmax=30, filename="Lawnmower/field_"+str(i))
-        KnowledgePlot(knowledge=self.knowledge, vmin=20, vmax=30, filename=foldername+"Field_{:03d}".format(i), html=True)
-
-
-
+        KnowledgePlot(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX, filename=foldername+"Field_{:03d}".format(i), html=False)
 
