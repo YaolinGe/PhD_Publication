@@ -138,6 +138,7 @@ class Simulator:
 
             self.knowledge.step_no = i
             self.knowledge = Sampler(self.knowledge, self.ground_truth, ind_sample).Knowledge
-
+            KnowledgePlot(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX,
+                          filename=foldername + "Field_{:03d}".format(i), html=False)
         KnowledgePlot(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX, filename=foldername+"Field_{:03d}".format(i), html=False)
 

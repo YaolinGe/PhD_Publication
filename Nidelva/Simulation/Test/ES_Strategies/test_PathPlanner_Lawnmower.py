@@ -73,12 +73,14 @@ class LawnmowerTest:
         print("test config is done, time consumed: ", t2 - t1)
 
     def run_test(self):
-        LawnMowerPlanning(self.knowledge)
+        LawnMowerPlanningSetup = LawnMowerPlanning(knowledge=self.knowledge)
+        LawnMowerPlanningSetup.build_3d_lawn_mower()
 
 
 
 if __name__ == "__main__":
     a = LawnmowerTest(steps=1)
+
 
 
 
