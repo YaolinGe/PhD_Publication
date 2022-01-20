@@ -23,19 +23,11 @@ class LawnMowerPlanning:
         self.lawn_mower_path_3d = []
         self.build_2d_lawn_mower()
         self.get_unique_depth_layer()
-        for k in range(len(self.depth)):
-            if isEven(k):
-                for i in range(len(self.lawn_mower_path_2d)):
-                    self.lawn_mower_path_3d.append([self.lawn_mower_path_2d[i][0],
-                                                    self.lawn_mower_path_2d[i][1],
-                                                    self.depth[k]])
-            else:
-                for i in range(len(self.lawn_mower_path_2d)-1, -1, -1):
-                    self.lawn_mower_path_3d.append([self.lawn_mower_path_2d[i][0],
-                                                    self.lawn_mower_path_2d[i][1],
-                                                    self.depth[k]])
-        self.lawn_mower_path_3d = np.array(self.lawn_mower_path_3d)
-        # print(self.lawn_mower_path_3d)
+        self.get_yoyo_depth_waypoint()
+        quotient = int(np.ceil(len(self.lawn_mower_path_2d) / len(self.depth_yoyo)))
+        self.depth_yoyo_path_waypoint = np.tile(self.depth_yoyo, quotient)
+        self.depth_yoyo_path_waypoint = self.depth_yoyo_path_waypoint[:len(self.lawn_mower_path_2d)]
+        self.lawn_mower_path_3d = np.hstack((self.lawn_mower_path_2d, self.depth_yoyo_path_waypoint.reshape(-1, 1)))
 
     def build_2d_lawn_mower(self):
         self.lawn_mower_path_2d = []
@@ -68,6 +60,9 @@ class LawnMowerPlanning:
 
     def get_unique_depth_layer(self):
         self.depth = np.unique(self.knowledge.coordinates[:, 2])
+
+    def get_yoyo_depth_waypoint(self):
+        self.depth_yoyo = np.append(self.depth, np.flip(self.depth))
 
 
 

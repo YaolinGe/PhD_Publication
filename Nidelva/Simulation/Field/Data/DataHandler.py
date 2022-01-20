@@ -20,26 +20,26 @@ class DataHandler:
 
         print("h")
 
-    def load_all_sinmod_data_from_folder(self):
-        self.data_folder = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Data/Nidelva/SINMOD_DATA/"
-        files = os.listdir(self.data_folder)
-        files.sort()
-        print(files)
-        self.counter = 0
-        for file in files:
-            if file.endswith(".nc"):
-                print(file)
-                os.system("say new data")
-                t1 = time.time()
-                self.sinmod = netCDF4.Dataset(self.data_folder + file)
-                ref_timestamp = datetime.strptime(file[8:18], "%Y.%m.%d").timestamp()
-                self.timestamp = np.array(self.sinmod["time"]) * 24 * 3600 + ref_timestamp #change ref timestamp
-                self.lat = np.array(self.sinmod['gridLats'])
-                self.lon = np.array(self.sinmod['gridLons'])
-                self.depth = np.array(self.sinmod['zc'])[:self.layers]
-                self.salinity = np.array(self.sinmod['salinity'])[:, :self.layers, :, :]
-                t2 = time.time()
-                print("Time consumed: ", t2 - t1)
+    # def load_all_sinmod_data_from_folder(self):
+    #     self.data_folder = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Data/Nidelva/SINMOD_DATA/"
+    #     files = os.listdir(self.data_folder)
+    #     files.sort()
+    #     print(files)
+    #     self.counter = 0
+    #     for file in files:
+    #         if file.endswith(".nc"):
+    #             print(file)
+    #             os.system("say new data")
+    #             t1 = time.time()
+    #             self.sinmod = netCDF4.Dataset(self.data_folder + file)
+    #             ref_timestamp = datetime.strptime(file[8:18], "%Y.%m.%d").timestamp()
+    #             self.timestamp = np.array(self.sinmod["time"]) * 24 * 3600 + ref_timestamp #change ref timestamp
+    #             self.lat = np.array(self.sinmod['gridLats'])
+    #             self.lon = np.array(self.sinmod['gridLons'])
+    #             self.depth = np.array(self.sinmod['zc'])[:self.layers]
+    #             self.salinity = np.array(self.sinmod['salinity'])[:, :self.layers, :, :]
+    #             t2 = time.time()
+    #             print("Time consumed: ", t2 - t1)
 
     def average_all_sinmod_from_folder(self):
         self.data_folder = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Data/Nidelva/SINMOD_DATA/"

@@ -129,5 +129,44 @@ import pandas as pd
 df = pd.DataFrame(np.hstack((vectorise(lat), vectorise(lon), vectorise(salinity))), columns=["lat", "lon", "salinity"])
 df.to_csv("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Data/Nidelva/SINMOD_DATA/samples_2020.05.01_surface_mean_salinity.csv", index=False)
 
+#%% Simulation Area
+from usr_func import *
+import pandas as pd
+polygon = np.array([[6.344800000000000040e+01, 1.040000000000000036e+01],
+                    [6.344800000000000040e+01, 1.041999999999999993e+01],
+                    [6.346000000000000085e+01, 1.041999999999999993e+01],
+                    [6.346000000000000085e+01, 1.040000000000000036e+01]])
+df = pd.DataFrame(polygon, columns=["lat", "lon"])
+df.to_csv("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Data/Nidelva/SINMOD_DATA/simulation_area.csv", index=False)
+
+
+#%% Handle negative values
+from usr_func import *
+import pandas as pd
+path = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Data/Nidelva/SINMOD_DATA/data_sinmod.csv"
+
+data = pd.read_csv(path).to_numpy()
+# data['salinity'] = [np.nan if data['salinity'] < 0]
+depth = data[:, 2]
+ind_surface = np.where(depth == .5)[0]
+data_surface = data[ind_surface]
+ind_nan = np.where(data_surface[:, -1] < 0)[0]
+data_surface[ind_nan, -1] = float("NaN")
+
+# for i in range(len(ind_nan)):
+#     print(data_surface.iloc[i])
+plt.plot(data_surface[:, -1])
+plt.show()
+
+df = pd.DataFrame(data_surface, columns=["lat", "lon", "depth", "salinity"])
+
+# plt.plot(data_surface['salinity'])
+# plt.show()
+df.to_csv("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Data/Nidelva/SINMOD_DATA/data_sinmod_surface.csv", index=False)
+#%%
+
+path = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Data/Nidelva/SINMOD_DATA/samples_2020.05.01_surface_mean_salinity.csv"
+data2 = pd.read_csv(path)
+
 
 
