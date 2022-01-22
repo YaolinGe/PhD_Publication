@@ -51,11 +51,12 @@ class GridGenerator:
         allGridWithinField = self.traverseChildrenNodes(gridNode_start)
         self.grid = np.array(self.grid)
         if len(self.grid) > self.points_allowed:
-            print("{:d} grid points are generated, only {:d} waypoints are selected!".format(len(self.grid), self.points_allowed))
+            # print("{:d} grid points are generated, only {:d} waypoints are selected!".format(len(self.grid), self.points_allowed))
             self.grid = self.grid[:self.points_allowed, :]
         else:
-            print("{:d} grid points are generated, all are selected!".format(len(self.grid)))
-        print("grid shape: ", self.grid.shape)
+            pass
+            # print("{:d} grid points are generated, all are selected!".format(len(self.grid)))
+        # print("grid shape: ", self.grid.shape)
 
     def getNewLocations(self, loc):
         '''
@@ -108,6 +109,6 @@ class GridGenerator:
             for j in range(len(self.depth)):
                 coordinates.append([self.grid[i, 0], self.grid[i, 1], self.depth[j]])
         self.coordinates = np.array(coordinates)
-        print("Coordinates are built successfully! Coordinates: ", self.coordinates.shape)
+        # print("Coordinates are built successfully! Coordinates: ", self.coordinates.shape)
 
 

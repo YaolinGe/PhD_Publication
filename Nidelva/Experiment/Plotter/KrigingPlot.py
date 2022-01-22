@@ -114,8 +114,8 @@ class KrigingPlot:
             y=self.grid_xyz[:, 0],
             z=-self.grid_xyz[:, 2],
             value=self.mu_prior.flatten(),
-            isomin=18,
-            isomax=30,
+            isomin=0,
+            isomax=28,
             opacity=.1,
             surface_count=30,
             colorscale="rainbow",
@@ -132,8 +132,8 @@ class KrigingPlot:
             y=self.grid_xyz[:, 0],
             z=-self.grid_xyz[:, 2],
             value=self.mu_posterior.flatten(),
-            isomin=18,
-            isomax=30,
+            isomin=0,
+            isomax=28,
             opacity=.1,
             surface_count=30,
             colorscale="rainbow",
@@ -251,6 +251,147 @@ class KrigingPlot:
         pass
 
 a = KrigingPlot()
+
+#%%
+ind_surface = np.where(a.grid_xyz[:, 2] == 0.5)[0]
+plt.scatter(a.grid_xyz[ind_surface, 0], a.grid_xyz[ind_surface, 1], c = a.mu_posterior[ind_surface], cmap = "Paired", vmin = 10, vmax = 30)
+
+plt.colorbar()
+plt.show()
+
+
+
+#%%
+
+
+def plot(self):
+    fig = make_subplots(rows=1, cols=3, specs=[[{'type': 'scene'}, {'type': 'scene'}, {'type': 'scene'}]],
+                        subplot_titles=("Prior field", "Posterior field", "Posterior excursion probability"))
+    fig.add_trace(go.Volume(
+        x=self.grid_xyz[:, 1],
+        y=self.grid_xyz[:, 0],
+        z=-self.grid_xyz[:, 2],
+        value=self.mu_prior.flatten(),
+        isomin=0,
+        isomax=28,
+        opacity=.1,
+        surface_count=30,
+        colorscale="Blues",
+        # coloraxis="coloraxis1",
+        colorbar=dict(x=0.3, y=0.5, len=.5),
+        # reversescale=True,
+        caps=dict(x_show=False, y_show=False, z_show=False),
+    ),
+        row=1, col=1
+    )
+
+    fig.add_trace(go.Volume(
+        x=self.grid_xyz[:, 1],
+        y=self.grid_xyz[:, 0],
+        z=-self.grid_xyz[:, 2],
+        value=self.mu_posterior.flatten(),
+        isomin=0,
+        isomax=28,
+        opacity=.1,
+        surface_count=30,
+        colorscale="Blues",
+        # coloraxis="coloraxis1",
+        colorbar=dict(x=0.65, y=0.5, len=.5),
+        # reversescale=True,
+        caps=dict(x_show=False, y_show=False, z_show=False),
+    ),
+        row=1, col=2
+    )
+
+    fig.add_trace(go.Volume(
+        x=self.grid_xyz[:, 1],
+        y=self.grid_xyz[:, 0],
+        z=-self.grid_xyz[:, 2],
+        value=self.excursion_prob.flatten(),
+        isomin=0,
+        isomax=1,
+        opacity=.1,
+        surface_count=30,
+        colorscale="gnbu",
+        # coloraxis="coloraxis1",
+        colorbar=dict(x=1, y=0.5, len=.5),
+        reversescale=True,
+        caps=dict(x_show=False, y_show=False, z_show=False),
+    ),
+        row=1, col=3
+    )
+    fig.add_trace(go.Scatter3d(
+        # print(trajectory),
+        x=self.xyz_auv_usr[:, 1],
+        y=self.xyz_auv_usr[:, 0],
+        z=-self.xyz_auv_usr[:, 2],
+        mode='markers+lines',
+        marker=dict(
+            size=5,
+            color="black",
+            showscale=False,
+        ),
+        line=dict(
+            color="yellow",
+            width=3,
+            showscale=False,
+        ),
+        showlegend=False,
+    ),
+        row='all', col='all'
+    )
+
+    camera = dict(
+        up=dict(x=0, y=0, z=1),
+        center=dict(x=0, y=0, z=0),
+        eye=dict(x=2.25, y=2.25, z=2.25)
+    )
+
+    fig.update_layout(
+        scene=dict(
+            xaxis=dict(showticklabels=False),
+            yaxis=dict(showticklabels=False),
+            zaxis=dict(nticks=4, range=[-2, 0], showticklabels=False),
+            xaxis_title='Lon [deg]',
+            yaxis_title='Lat [deg]',
+            zaxis_title='Depth [m]',
+        ),
+        scene_aspectmode='manual',
+        scene_aspectratio=dict(x=1, y=1, z=.5),
+        scene2=dict(
+            xaxis=dict(showticklabels=False),
+            yaxis=dict(showticklabels=False),
+            zaxis=dict(nticks=4, range=[-2, 0], showticklabels=False),
+            xaxis_title='Lon [deg]',
+            yaxis_title='Lat [deg]',
+            zaxis_title='Depth [m]',
+        ),
+        scene2_aspectmode='manual',
+        scene2_aspectratio=dict(x=1, y=1, z=.5),
+        scene3=dict(
+            xaxis=dict(showticklabels=False),
+            yaxis=dict(showticklabels=False),
+            zaxis=dict(nticks=4, range=[-2, 0], showticklabels=False),
+            xaxis_title='Lon [deg]',
+            yaxis_title='Lat [deg]',
+            zaxis_title='Depth [m]',
+        ),
+        scene3_aspectmode='manual',
+        scene3_aspectratio=dict(x=1, y=1, z=.5),
+        scene_camera=camera,
+        scene2_camera=camera,
+        scene3_camera=camera,
+    )
+    plotly.offline.plot(fig,
+                        filename="/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Experiment/Field_posterior.html",
+                        auto_open=False)
+    os.system(
+        "open -a \"Google Chrome\" /Users/yaoling/OneDrive\ -\ NTNU/MASCOT_PhD/Publication/Nidelva/fig/Experiment//Field_posterior.html")
+
+    pass
+
+plot(a)
+
 #%%
 
 def save_processed_data_slices(self):

@@ -78,7 +78,7 @@ class MyopicPlanning_3D:
         id = np.unique(np.array(id))  # filter out repetitive candidate locations
         self.knowledge.ind_cand_filtered = id  # refresh old candidate location
         t2 = time.time()
-        print("Filtering takes: ", t2 - t1)
+        # print("Filtering takes: ", t2 - t1)
 
     def search_for_new_location(self):
         ind_next = np.abs(EP_1D(self.knowledge.mu, self.knowledge.Sigma, self.knowledge.threshold_salinity) - .5).argmin()

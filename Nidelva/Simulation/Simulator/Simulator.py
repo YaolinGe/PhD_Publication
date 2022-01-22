@@ -48,7 +48,7 @@ class Simulator:
     knowledge = None
 
     def __init__(self, steps=10, random_seed=0):
-        print("Random seed: ", random_seed)
+        # print("Random seed: ", random_seed)
         self.seed = random_seed
         np.random.seed(self.seed)
         self.steps = steps
@@ -75,6 +75,10 @@ class Simulator:
 
         self.ground_truth = np.linalg.cholesky(self.knowledge.Sigma) @ \
                             vectorise(np.random.randn(self.knowledge.coordinates.shape[0])) + self.knowledge.mu
+
+        LawnMowerPlanningSetup = LawnMowerPlanning(knowledge=self.knowledge)
+        LawnMowerPlanningSetup.build_3d_lawn_mower()
+        self.lawn_mower_path_3d = LawnMowerPlanningSetup.lawn_mower_path_3d
         t2 = time.time()
         print("Simulation config is done, time consumed: ", t2 - t1)
 
@@ -90,14 +94,14 @@ class Simulator:
         KnowledgePlot(knowledge=self.knowledge_ground_truth, vmin=VMIN, vmax=VMAX, filename=foldername+"Field_ground_truth", html=False)
 
     def run_2d(self):
-        self.starting_loc = [63.46, 10.41, 1.]
+        self.starting_loc = self.lawn_mower_path_3d[0, :]
         self.ind_start = get_grid_ind_at_nearest_loc(self.starting_loc, self.knowledge.coordinates) # get nearest neighbour
         self.knowledge.ind_prev = self.knowledge.ind_now = self.ind_sample = self.ind_start
 
         foldername = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Simulation/Replicates/R_{:03d}/2D/".format(self.seed)
         checkfolder(foldername)
         for i in range(self.steps):
-            print("Step No. ", i)
+            # print("Step No. ", i)
             self.knowledge = Sampler(self.knowledge, self.ground_truth, self.ind_sample).Knowledge
             lat_next, lon_next, depth_next = MyopicPlanning_2D(knowledge=self.knowledge).next_waypoint
             self.ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next], self.knowledge.coordinates)
@@ -106,14 +110,14 @@ class Simulator:
                       html=False)
 
     def run_3d(self):
-        self.starting_loc = [63.46, 10.41, 1.]
+        self.starting_loc = self.lawn_mower_path_3d[0, :]
         self.ind_start = get_grid_ind_at_nearest_loc(self.starting_loc, self.knowledge.coordinates) # get nearest neighbour
         self.knowledge.ind_prev = self.knowledge.ind_now = self.ind_sample = self.ind_start
 
         foldername = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Simulation/Replicates/R_{:03d}/3D/".format(self.seed)
         checkfolder(foldername)
         for i in range(self.steps):
-            print("Step No. ", i)
+            # print("Step No. ", i)
             self.knowledge = Sampler(self.knowledge, self.ground_truth, self.ind_sample).Knowledge
             lat_next, lon_next, depth_next = MyopicPlanning_3D(knowledge=self.knowledge).next_waypoint
             self.ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next],self.knowledge.coordinates)
@@ -121,9 +125,6 @@ class Simulator:
         KnowledgePlot(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX, filename=foldername + "Field_{:03d}".format(i), html=False)
 
     def run_lawn_mower(self):
-        LawnMowerPlanningSetup = LawnMowerPlanning(knowledge=self.knowledge)
-        LawnMowerPlanningSetup.build_3d_lawn_mower()
-        self.lawn_mower_path_3d = LawnMowerPlanningSetup.lawn_mower_path_3d
         lat_start, lon_start, depth_start = self.lawn_mower_path_3d[0, :]
         ind_start = get_grid_ind_at_nearest_loc([lat_start, lon_start, depth_start], self.knowledge.coordinates)
         self.knowledge.ind_prev = self.knowledge.ind_now = ind_start
@@ -132,13 +133,11 @@ class Simulator:
         checkfolder(foldername)
 
         for i in range(self.steps):
-            print("Step No. ", i)
+            # print("Step No. ", i)
             lat_next, lon_next, depth_next = self.lawn_mower_path_3d[i, :]
             ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next], self.knowledge.coordinates)
 
             self.knowledge.step_no = i
             self.knowledge = Sampler(self.knowledge, self.ground_truth, ind_sample).Knowledge
-            KnowledgePlot(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX,
-                          filename=foldername + "Field_{:03d}".format(i), html=False)
         KnowledgePlot(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX, filename=foldername+"Field_{:03d}".format(i), html=False)
 

@@ -35,7 +35,7 @@ class MyopicPlanning_2D:
             while True:
                 ind_next = self.search_for_new_location()
                 if not ind_next in self.knowledge.ind_visited:
-                    print("Found new: ", ind_next)
+                    # print("Found new: ", ind_next)
                     self.knowledge.ind_next = ind_next
                     break
         else:
@@ -69,7 +69,7 @@ class MyopicPlanning_2D:
                     vec2 = vectorise([dx2, dy2])
                     if np.dot(vec1.T, vec2) >= 0:
                         id.append(self.knowledge.ind_cand[i])
-        print(id)
+        # print(id)
         id = np.unique(np.array(id))  # filter out repetitive candidate locations
         self.knowledge.ind_cand_filtered = id  # refresh old candidate location
         t2 = time.time()
