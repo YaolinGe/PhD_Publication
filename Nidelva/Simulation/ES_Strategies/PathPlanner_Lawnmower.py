@@ -45,7 +45,7 @@ class LawnMowerPlanning:
                     lat_temp, lon_temp = xy2latlon(self.x[i], self.y[j], self.box_lat_min, self.box_lon_min)
                     if self.polygon_path.contains_point((lat_temp, lon_temp)):
                         self.lawn_mower_path_2d.append([lat_temp, lon_temp])
-        # self.lawn_mower_path_2d = self.lawn_mower_path_2d[::-1] # change the starting location.
+        self.lawn_mower_path_2d = self.lawn_mower_path_2d[::-1] # change the starting location.
 
     def get_polygon_path(self):
         self.polygon_path = mplPath.Path(self.knowledge.polygon)

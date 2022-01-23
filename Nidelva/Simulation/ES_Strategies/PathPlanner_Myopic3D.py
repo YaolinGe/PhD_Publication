@@ -46,9 +46,13 @@ class MyopicPlanning_3D:
                                      self.knowledge.coordinates[self.knowledge.ind_now, 1])  # using the distance
 
         delta_z = self.knowledge.coordinates[:, 2] - self.knowledge.coordinates[self.knowledge.ind_now, 2]  # depth distance in z-direction
-        distance_vector = np.sqrt(delta_x ** 2 + delta_y ** 2 + delta_z ** 2)
-        self.knowledge.ind_cand = np.where((distance_vector <= self.knowledge.distance_neighbours) *
-                                           (distance_vector > self.knowledge.distance_self))[0]
+        # distance_vector = np.sqrt(delta_x ** 2 + delta_y ** 2 + delta_z ** 2)
+        # print("ok")
+        # print('Ellipsoid: ', delta_x ** 2 / self.knowledge.distance_lateral ** 2 + delta_y ** 2 / self.knowledge.distance_lateral ** 2 + delta_z ** 2 / self.knowledge.distance_vertical ** 2)
+        self.knowledge.ind_cand = np.where(delta_x ** 2 / self.knowledge.distance_neighbours ** 2 +
+                                           delta_y ** 2 / self.knowledge.distance_neighbours ** 2 +
+                                           delta_z ** 2 / (self.knowledge.distance_vertical + ) ** 2 <= 1)[0]
+        # print("ind_cand: ", self.knowledge.ind_cand)
 
     def filter_candidates_loc(self):
         id = []  # ind vector for containing the filtered desired candidate location

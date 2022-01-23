@@ -179,7 +179,7 @@ class KnowledgePlot:
 
         fig.update_layout(
             scene = dict(
-                zaxis = dict(nticks=4, range=[-2,0],),
+                zaxis = dict(nticks=4, range=[-3,0],),
                 xaxis_title='Lon [deg]',
                 yaxis_title='Lat [deg]',
                 zaxis_title='Depth [m]',
@@ -187,7 +187,7 @@ class KnowledgePlot:
             scene_aspectmode='manual',
             scene_aspectratio=dict(x=1, y=1, z=.5),
             scene2=dict(
-                zaxis=dict(nticks=4, range=[-2, 0], ),
+                zaxis=dict(nticks=4, range=[-3, 0], ),
                 xaxis_title='Lon [deg]',
                 yaxis_title='Lat [deg]',
                 zaxis_title='Depth [m]',
@@ -195,7 +195,7 @@ class KnowledgePlot:
             scene2_aspectmode='manual',
             scene2_aspectratio=dict(x=1, y=1, z=.5),
             scene3=dict(
-                zaxis=dict(nticks=4, range=[-2, 0], ),
+                zaxis=dict(nticks=4, range=[-3, 0], ),
                 xaxis_title='Lon [deg]',
                 yaxis_title='Lat [deg]',
                 zaxis_title='Depth [m]',

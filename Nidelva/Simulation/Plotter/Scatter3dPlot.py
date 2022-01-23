@@ -3,6 +3,7 @@ import plotly.graph_objects as go
 import plotly
 import os
 
+
 class Scatter3DPlot:
 
     def __init__(self, coordinates, filename):

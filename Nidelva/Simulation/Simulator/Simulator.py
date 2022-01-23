@@ -22,7 +22,7 @@ import time
 
 
 # ==== Field Config ====
-DEPTH = [.5, 1, 1.5]
+DEPTH = [.5, 1, 1.5, 2.0, 2.5]
 DISTANCE_LATERAL = 120
 DISTANCE_VERTICAL = np.abs(DEPTH[1] - DEPTH[0])
 DISTANCE_TOLERANCE = 1
@@ -79,6 +79,7 @@ class Simulator:
         LawnMowerPlanningSetup = LawnMowerPlanning(knowledge=self.knowledge)
         LawnMowerPlanningSetup.build_3d_lawn_mower()
         self.lawn_mower_path_3d = LawnMowerPlanningSetup.lawn_mower_path_3d
+        self.starting_index = int(len(self.lawn_mower_path_3d)/2)
         t2 = time.time()
         print("Simulation config is done, time consumed: ", t2 - t1)
 
@@ -94,7 +95,7 @@ class Simulator:
         KnowledgePlot(knowledge=self.knowledge_ground_truth, vmin=VMIN, vmax=VMAX, filename=foldername+"Field_ground_truth", html=False)
 
     def run_2d(self):
-        self.starting_loc = self.lawn_mower_path_3d[0, :]
+        self.starting_loc = self.lawn_mower_path_3d[self.starting_index, :]
         self.ind_start = get_grid_ind_at_nearest_loc(self.starting_loc, self.knowledge.coordinates) # get nearest neighbour
         self.knowledge.ind_prev = self.knowledge.ind_now = self.ind_sample = self.ind_start
 
@@ -110,7 +111,7 @@ class Simulator:
                       html=False)
 
     def run_3d(self):
-        self.starting_loc = self.lawn_mower_path_3d[0, :]
+        self.starting_loc = self.lawn_mower_path_3d[self.starting_index, :]
         self.ind_start = get_grid_ind_at_nearest_loc(self.starting_loc, self.knowledge.coordinates) # get nearest neighbour
         self.knowledge.ind_prev = self.knowledge.ind_now = self.ind_sample = self.ind_start
 
@@ -122,10 +123,12 @@ class Simulator:
             lat_next, lon_next, depth_next = MyopicPlanning_3D(knowledge=self.knowledge).next_waypoint
             self.ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next],self.knowledge.coordinates)
             self.knowledge.step_no = i
+            KnowledgePlot(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX,
+                          filename=foldername + "Field_{:03d}".format(i), html=False)
         KnowledgePlot(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX, filename=foldername + "Field_{:03d}".format(i), html=False)
 
     def run_lawn_mower(self):
-        lat_start, lon_start, depth_start = self.lawn_mower_path_3d[0, :]
+        lat_start, lon_start, depth_start = self.lawn_mower_path_3d[self.starting_index, :]
         ind_start = get_grid_ind_at_nearest_loc([lat_start, lon_start, depth_start], self.knowledge.coordinates)
         self.knowledge.ind_prev = self.knowledge.ind_now = ind_start
 
@@ -134,7 +137,7 @@ class Simulator:
 
         for i in range(self.steps):
             # print("Step No. ", i)
-            lat_next, lon_next, depth_next = self.lawn_mower_path_3d[i, :]
+            lat_next, lon_next, depth_next = self.lawn_mower_path_3d[self.starting_index + i, :]
             ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next], self.knowledge.coordinates)
 
             self.knowledge.step_no = i

@@ -7,7 +7,7 @@ from scipy.interpolate import griddata
 from scipy.interpolate import interpn
 from scipy.interpolate import NearestNDInterpolator
 plt.rcParams["font.family"] = "Times New Roman"
-plt.rcParams.update({'font.size': 12})
+plt.rcParams.update({'font.size': 20})
 # plt.rcParams.update({'font.style': 'oblique'})
 circumference = 40075000 # [m], circumference
 
