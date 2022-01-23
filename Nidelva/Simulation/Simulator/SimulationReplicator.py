@@ -13,10 +13,10 @@ class SimulationReplicator:
         self.result_simulation_3d = SimulationResultContainer("3D Myopic Strategy")
         self.result_simulation_lawnmower = SimulationResultContainer("Lawn Mower Strategy")
         self.NUMBER_STEPS = 20
-        self.NUMBER_REPLICATES = 1
+        self.NUMBER_REPLICATES = 100
         self.seed = np.random.choice(np.arange(1000), self.NUMBER_REPLICATES, replace=False)
         self.run_replicate()
-        # self.plot_simulation_result()
+        self.plot_simulation_result()
         pass
 
     def run_replicate(self):
@@ -26,17 +26,17 @@ class SimulationReplicator:
             t1 = time.time()
             seed = self.seed[i]
             try:
-                # self.simulation_2d = Simulator(steps=self.NUMBER_STEPS, random_seed=seed)
-                # self.simulation_2d.run_2d()
-                # self.result_simulation_2d.append(self.simulation_2d.knowledge)
+                self.simulation_2d = Simulator(steps=self.NUMBER_STEPS, random_seed=seed)
+                self.simulation_2d.run_2d()
+                self.result_simulation_2d.append(self.simulation_2d.knowledge)
 
                 self.simulation_3d = Simulator(steps=self.NUMBER_STEPS, random_seed=seed)
                 self.simulation_3d.run_3d()
                 self.result_simulation_3d.append(self.simulation_3d.knowledge)
 
-                # self.simulation_lawnmower = Simulator(steps=self.NUMBER_STEPS, random_seed=seed)
-                # self.simulation_lawnmower.run_lawn_mower()
-                # self.result_simulation_lawnmower.append(self.simulation_lawnmower.knowledge)
+                self.simulation_lawnmower = Simulator(steps=self.NUMBER_STEPS, random_seed=seed)
+                self.simulation_lawnmower.run_lawn_mower()
+                self.result_simulation_lawnmower.append(self.simulation_lawnmower.knowledge)
             except:
                 print("Jump over one")
                 pass
@@ -128,11 +128,10 @@ class SimulationReplicator:
         plt.ylabel('Distance travelled [m]')
         plt.legend()
         plt.savefig(
-            "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Simulation/Result_5layers.pdf")
+            "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Simulation/Result_5layers_MS.pdf")
         # plt.show()
         plt.close("all")
         pass
 
 replicator = SimulationReplicator()
-
 

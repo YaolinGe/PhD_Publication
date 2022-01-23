@@ -37,15 +37,17 @@ class Plot3D:
 
         # print(lat.shape)
         points_mean, values_mean = interpolate_3d(lon, lat, depth, self.knowledge.mu)
-        points_std, values_std = interpolate_3d(lon, lat, depth, np.sqrt(np.diag(self.knowledge.Sigma)))
-        points_ep, values_ep = interpolate_3d(lon, lat, depth, self.knowledge.excursion_prob)
+        points_es, values_es = interpolate_3d(lon, lat, depth, self.knowledge.excursion_set)
+        # points_std, values_std = interpolate_3d(lon, lat, depth, np.sqrt(np.diag(self.knowledge.Sigma)))
+        # points_ep, values_ep = interpolate_3d(lon, lat, depth, self.knowledge.excursion_prob)
         trajectory = np.array(self.knowledge.trajectory)
 
-        fig = make_subplots(rows = 1, cols = 1, specs = [[{'type': 'scene'}]],
-                            subplot_titles=("SINMOD"))
-
+        fig = make_subplots(rows = 1, cols = 1, specs = [[{'type': 'scene'}]])
+        discrete_cmap = plt.get_cmap("BrBG", 10)
         # fig = make_subplots(rows = 1, cols = 3, specs = [[{'type': 'scene'}, {'type': 'scene'}, {'type': 'scene'}]],
         #                     subplot_titles=("Mean", "Std", "EP"))
+
+
         fig.add_trace(go.Volume(
             x = points_mean[:, 0],
             y = points_mean[:, 1],
@@ -54,15 +56,38 @@ class Plot3D:
             isomin=self.vmin,
             isomax=self.vmax,
             opacity = .1,
-            surface_count = 30,
-            colorscale = "rainbow",
+            surface_count = 10,
+            # colorscale = "BrBG",
+            coloraxis="coloraxis",
+            # colorscale=discrete_cmap,
             # coloraxis="coloraxis1",
-            colorbar=dict(x=0.1,y=0.5, len=.5),
-            reversescale=True,
+            # colorbar=dict(x=0.75,y=0.5, len=1),
+            # reversescale=True,
             caps=dict(x_show=False, y_show=False, z_show = False),
             ),
             row=1, col=1
         )
+
+        fig.add_trace(go.Volume(
+            x = points_es[:, 0],
+            y = points_es[:, 1],
+            z = -points_es[:, 2],
+            value=values_es.flatten(),
+            isomin=0,
+            isomax=1,
+            opacity = 0.4,
+            surface_count = 1,
+            colorscale = "Reds",
+            showscale=False,
+            # colorscale=discrete_cmap,
+            # coloraxis="coloraxis1",
+            # colorbar=dict(x=.75,y=0.5, len=1),
+            # reversescale=True,
+            caps=dict(x_show=False, y_show=False, z_show = False),
+            ),
+            row=1, col=1
+        )
+
         # print(values_std)
         # if len(values_std):
         #     fig.add_trace(go.Volume(
@@ -171,19 +196,33 @@ class Plot3D:
         camera = dict(
             up=dict(x=0, y=0, z=1),
             center=dict(x=0, y=0, z=0),
-            eye=dict(x=2.25, y=2.25, z=2.25)
+            eye=dict(x=1.25, y=-1.25, z=1)
         )
-
+        fig.update_coloraxes(colorscale="BrBG", colorbar=dict(lenmode='fraction', len=.5, thickness=20,
+                                                                tickfont=dict(size=18, family="Times New Roman"),
+                                                                title="Salinity",
+                                                                titlefont=dict(size=18, family="Times New Roman")))
+        fig.update_layout(coloraxis_colorbar_x=0.75)
         fig.update_layout(
+            title={
+                'text': "",
+                'y': 0.9,
+                'x': 0.5,
+                'xanchor': 'center',
+                'yanchor': 'top'},
             scene = dict(
-                zaxis = dict(nticks=4, range=[-2,0],),
-                xaxis_title='Lon [deg]',
-                yaxis_title='Lat [deg]',
-                zaxis_title='Depth [m]',
+                zaxis = dict(nticks=4, range=[-2.5,-0.5],),
+                xaxis_tickfont=dict(size=14, family="Times New Roman"),
+                yaxis_tickfont=dict(size=14, family="Times New Roman"),
+                zaxis_tickfont=dict(size=14, family="Times New Roman"),
+                xaxis_title=dict(text="Longitude", font=dict(size=18, family="Times New Roman")),
+                yaxis_title=dict(text="Latitude", font=dict(size=18, family="Times New Roman")),
+                zaxis_title=dict(text="Depth", font=dict(size=18, family="Times New Roman")),
             ),
             scene_aspectmode='manual',
-            scene_aspectratio=dict(x=1, y=1, z=.5),
+            scene_aspectratio=dict(x=1, y=1, z=.25),
             scene_camera=camera,
+
             # scene2=dict(
             #     zaxis=dict(nticks=4, range=[-2, 0], ),
             #     xaxis_title='Lon [deg]',
@@ -203,6 +242,25 @@ class Plot3D:
             # scene_camera=camera,
             # scene2_camera=camera,
             # scene3_camera=camera,
+            # annotations=[
+            #     dict(
+            #         x=10.405,
+            #         y=63.45,
+            #         # z=0,
+            #         text="Boundary envelope",
+            #         textangle=0,
+            #         ax=-50,
+            #         ay=-70,
+            #         font=dict(
+            #             color="black",
+            #             size=18,
+            #             family="Times New Roman"
+            #         ),
+            #         arrowcolor="black",
+            #         arrowsize=3,
+            #         arrowwidth=1,
+            #         arrowhead=1),
+            # ],
         )
 
         # fig.update_scenes(xaxis_visible=False, yaxis_visible=False,zaxis_visible=False)

@@ -26,7 +26,7 @@ DEPTH = [.5, 1, 1.5, 2.0, 2.5]
 DISTANCE_LATERAL = 120
 DISTANCE_VERTICAL = np.abs(DEPTH[1] - DEPTH[0])
 DISTANCE_TOLERANCE = 1
-DISTANCE_SELF = np.abs(DEPTH[-1] - DEPTH[0])
+DISTANCE_SELF = 20
 THRESHOLD = 28
 # ==== End Field Config ====
 
@@ -78,7 +78,7 @@ class Simulator:
         LawnMowerPlanningSetup = LawnMowerPlanning(knowledge=self.knowledge)
         LawnMowerPlanningSetup.build_3d_lawn_mower()
         self.lawn_mower_path_3d = LawnMowerPlanningSetup.lawn_mower_path_3d
-        self.starting_index = int(len(self.lawn_mower_path_3d)/2)
+        self.starting_index = 30
         t2 = time.time()
         print("Simulation config is done, time consumed: ", t2 - t1)
 
@@ -122,8 +122,8 @@ class Simulator:
             lat_next, lon_next, depth_next = MyopicPlanning_3D(knowledge=self.knowledge).next_waypoint
             self.ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next],self.knowledge.coordinates)
             self.knowledge.step_no = i
-            KnowledgePlot(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX,
-                          filename=foldername + "Field_{:03d}".format(i), html=False)
+            # KnowledgePlot(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX,
+            #               filename=foldername + "Field_{:03d}".format(i), html=False)
         KnowledgePlot(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX, filename=foldername + "Field_{:03d}".format(i), html=False)
 
     def run_lawn_mower(self):

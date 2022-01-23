@@ -18,6 +18,7 @@ class Knowledge:
         self.mu = mu
         self.Sigma = Sigma
         self.excursion_prob = None
+        self.excursion_set = None
 
         self.ind_prev = ind_prev
         self.ind_now = ind_now

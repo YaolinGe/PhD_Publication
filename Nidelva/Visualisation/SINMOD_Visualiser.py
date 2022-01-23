@@ -2,8 +2,9 @@
 This script visualises SINMOD data for the paper
 Author: Yaolin Ge
 Contact: yaolin.ge@ntnu.no
-Date: 2022-01-06
+Date: 2022-01-23
 """
+import numpy as np
 
 from Nidelva.Simulation.ES_Strategies.Knowledge import Knowledge
 from Nidelva.Simulation.Field.Data.DataInterpolator import DataInterpolator
@@ -16,7 +17,8 @@ import time
 
 
 # ==== Field Config ====
-DEPTH = [.5, 1.5, 2.5, 3.5]
+DEPTH = [.5, 1.0, 1.5, 2.0, 2.5]
+# DEPTH = [.5, 1.5, 2.5, 3.5]
 DISTANCE_LATERAL = 120
 DISTANCE_VERTICAL = np.abs(DEPTH[1] - DEPTH[0])
 DISTANCE_TOLERANCE = 1
@@ -42,6 +44,8 @@ class SINMODVisualiser:
     knowledge = None
 
     def __init__(self):
+        self.seed = 0
+        np.random.seed(self.seed)
         self.config_visualisation()
         # self.save_benchmark_figure()
 
@@ -63,24 +67,33 @@ class SINMODVisualiser:
                                    distance_lateral=DISTANCE_LATERAL, distance_vertical=DISTANCE_VERTICAL,
                                    distance_tolerance=DISTANCE_TOLERANCE, distance_self=DISTANCE_SELF)
 
-        # self.ground_truth = np.linalg.cholesky(self.knowledge.Sigma) @ \
-        #                     vectorise(np.random.randn(self.knowledge.coordinates.shape[0])) + self.knowledge.mu
+        self.ground_truth = np.linalg.cholesky(self.knowledge.Sigma) @ \
+                            vectorise(np.random.randn(self.knowledge.coordinates.shape[0])) + self.knowledge.mu
 
         t2 = time.time()
         print("Simulation config is done, time consumed: ", t2 - t1)
 
     def plot_sinmod_raw(self):
-        self.knowledge_prior = self.knowledge
+        pass
+        # self.knowledge_prior = self.knowledge
         # self.knowledge_prior.excursion_prob = EP_1D(self.knowledge_prior.mu, self.knowledge_prior.Sigma, self.knowledge_prior.threshold_salinity)
-        Plot3D(knowledge=self.knowledge_prior, vmin=VMIN, vmax=VMAX, filename="SINMOD3D", html=True)
+        # Plot3D(knowledge=self.knowledge_prior, vmin=VMIN, vmax=VMAX, filename="SINMOD3D", html=True)
 
     def plot_sinmod_2d(self):
         Plot2D(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX, filename="SINMOD2D")
 
+    def plot_ground_truth(self):
+        self.knowledge.mu = self.ground_truth
+        self.knowledge.excursion_set = np.zeros_like(self.knowledge.mu)
+        self.knowledge.excursion_set[self.knowledge.mu < self.knowledge.threshold_salinity] = True
+        Plot3D(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX, filename="GroundTruth", html=True)
+        pass
+
 
 sinmod_visualiser = SINMODVisualiser()
+sinmod_visualiser.plot_ground_truth()
 # sinmod_visualiser.plot_sinmod_raw()
-sinmod_visualiser.plot_sinmod_2d()
+# sinmod_visualiser.plot_sinmod_2d()
 
 ## === Prepare SINMOD ===
 

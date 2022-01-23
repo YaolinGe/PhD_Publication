@@ -47,8 +47,10 @@ class KnowledgePlot:
         points_ep, values_ep = interpolate_3d(lon, lat, depth, self.knowledge.excursion_prob)
         trajectory = np.array(self.knowledge.trajectory)
 
-        fig = make_subplots(rows = 1, cols = 3, specs = [[{'type': 'scene'}, {'type': 'scene'}, {'type': 'scene'}]],
-                            subplot_titles=("Mean", "Std", "EP"))
+        fig = make_subplots(rows = 1, cols = 2, specs = [[{'type': 'scene'}, {'type': 'scene'}]],
+                            subplot_titles=("Updated field", "Updated excursion probability", ))
+        # fig = make_subplots(rows = 1, cols = 3, specs = [[{'type': 'scene'}, {'type': 'scene'}, {'type': 'scene'}]],
+        #                     subplot_titles=("Conditional Mean", "Std", "EP"))
         fig.add_trace(go.Volume(
             x = points_mean[:, 0],
             y = points_mean[:, 1],
@@ -58,32 +60,32 @@ class KnowledgePlot:
             isomax=self.vmax,
             opacity = .1,
             surface_count = 30,
-            colorscale = "rainbow",
+            colorscale = "BrBG",
             # coloraxis="coloraxis1",
-            colorbar=dict(x=0.3,y=0.5, len=.5),
+            colorbar=dict(x=0.5,y=0.5, len=.5),
             reversescale=True,
             caps=dict(x_show=False, y_show=False, z_show = False),
             ),
             row=1, col=1
         )
         # print(values_std)
-        if len(values_std):
-            fig.add_trace(go.Volume(
-                x=points_std[:, 0],
-                y=points_std[:, 1],
-                z=-points_std[:, 2],
-                value=values_std.flatten(),
-                isomin=0,
-                isomax=1,
-                opacity=.1,
-                surface_count=30,
-                colorscale = "rdbu",
-                colorbar=dict(x=0.65, y=0.5, len=.5),
-                reversescale=True,
-                caps=dict(x_show=False, y_show=False, z_show=False),
-            ),
-                row=1, col=2
-            )
+        # if len(values_std):
+        #     fig.add_trace(go.Volume(
+        #         x=points_std[:, 0],
+        #         y=points_std[:, 1],
+        #         z=-points_std[:, 2],
+        #         value=values_std.flatten(),
+        #         isomin=0,
+        #         isomax=1,
+        #         opacity=.1,
+        #         surface_count=30,
+        #         colorscale = "rdbu",
+        #         colorbar=dict(x=0.65, y=0.5, len=.5),
+        #         reversescale=True,
+        #         caps=dict(x_show=False, y_show=False, z_show=False),
+        #     ),
+        #         row=1, col=2
+        #     )
 
         fig.add_trace(go.Volume(
             x=points_ep[:, 0],
@@ -99,7 +101,8 @@ class KnowledgePlot:
             reversescale=True,
             caps=dict(x_show=False, y_show=False, z_show=False),
         ),
-            row=1, col=3
+            row=1, col=2,
+            # row = 1, col = 3,
         )
 
         if len(self.knowledge.ind_cand):
@@ -178,27 +181,42 @@ class KnowledgePlot:
         )
 
         fig.update_layout(
+            title={
+                'text': "Simulation",
+                'y': 0.9,
+                'x': 0.5,
+                'xanchor': 'center',
+                'yanchor': 'top'},
             scene = dict(
                 zaxis = dict(nticks=4, range=[-3,0],),
-                xaxis_title='Lon [deg]',
-                yaxis_title='Lat [deg]',
-                zaxis_title='Depth [m]',
+                xaxis_tickfont=dict(size=14, family="Times New Roman"),
+                yaxis_tickfont=dict(size=14, family="Times New Roman"),
+                zaxis_tickfont=dict(size=14, family="Times New Roman"),
+                xaxis_title=dict(text="Longitude", font=dict(size=18, family="Times New Roman")),
+                yaxis_title=dict(text="Latitude", font=dict(size=18, family="Times New Roman")),
+                zaxis_title=dict(text="Depth", font=dict(size=18, family="Times New Roman")),
             ),
             scene_aspectmode='manual',
             scene_aspectratio=dict(x=1, y=1, z=.5),
             scene2=dict(
                 zaxis=dict(nticks=4, range=[-3, 0], ),
-                xaxis_title='Lon [deg]',
-                yaxis_title='Lat [deg]',
-                zaxis_title='Depth [m]',
+                xaxis_tickfont=dict(size=14, family="Times New Roman"),
+                yaxis_tickfont=dict(size=14, family="Times New Roman"),
+                zaxis_tickfont=dict(size=14, family="Times New Roman"),
+                xaxis_title=dict(text="Longitude", font=dict(size=18, family="Times New Roman")),
+                yaxis_title=dict(text="Latitude", font=dict(size=18, family="Times New Roman")),
+                zaxis_title=dict(text="Depth", font=dict(size=18, family="Times New Roman")),
             ),
             scene2_aspectmode='manual',
             scene2_aspectratio=dict(x=1, y=1, z=.5),
             scene3=dict(
                 zaxis=dict(nticks=4, range=[-3, 0], ),
-                xaxis_title='Lon [deg]',
-                yaxis_title='Lat [deg]',
-                zaxis_title='Depth [m]',
+                xaxis_tickfont=dict(size=14, family="Times New Roman"),
+                yaxis_tickfont=dict(size=14, family="Times New Roman"),
+                zaxis_tickfont=dict(size=14, family="Times New Roman"),
+                xaxis_title=dict(text="Longitude", font=dict(size=18, family="Times New Roman")),
+                yaxis_title=dict(text="Latitude", font=dict(size=18, family="Times New Roman")),
+                zaxis_title=dict(text="Depth", font=dict(size=18, family="Times New Roman")),
             ),
             scene3_aspectmode='manual',
             scene3_aspectratio=dict(x=1, y=1, z=.5),

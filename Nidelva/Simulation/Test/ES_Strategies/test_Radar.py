@@ -74,13 +74,9 @@ class Test:
             z=-self.knowledge.coordinates[:, 2],
             mode='markers',
             marker=dict(
-                size=5,
+                size=1,
                 color="black",
             ),
-            # line=dict(
-            #     width=3,
-            #     color="yellow",
-            # )
         )])
         fig.add_trace(go.Scatter3d(
             x=[self.knowledge.coordinates[self.knowledge.ind_now, 1]],
@@ -98,11 +94,43 @@ class Test:
             z=-self.knowledge.coordinates[self.knowledge.ind_cand, 2],
             mode='markers',
             marker=dict(
-                size=8,
+                size=3,
                 color="blue",
             ),
         ))
-        fig.update_layout(aspect_mode='maual')
+        # fig.add_trace(go.Scatter3d(
+        #     x=radar.lon_radar.flatten(),
+        #     y=radar.lat_radar.flatten(),
+        #     z=-radar.depth_radar.flatten(),
+        #     opacity=0.1,
+        #     # value=radar.distance_radar.flatten(),
+        #     # isomin=10,
+        #     # isomax=50,
+        #     # surface_count=5,  # number of isosurfaces, 2 by default: only min and max
+        #     # colorbar_nticks=5,  # colorbar ticks correspond to isosurface values
+        #     # caps=dict(x_show=False, y_show=False)
+        #     mode='markers',
+        #     marker=dict(
+        #         size=3,
+        #         color="yellow",
+        #     ),
+        # ))
+        # fig.add_trace(go.Isosurface(
+        #     x=radar.lon_radar.flatten(),
+        #     y=radar.lat_radar.flatten(),
+        #     z=-radar.depth_radar.flatten(),
+        #     value=radar.distance_radar.flatten(),
+        #     isomin=0,
+        #     isomax=1,
+        #
+        #     surface_count=10,  # number of isosurfaces, 2 by default: only min and max
+        #     # colorbar_nticks=5,  # colorbar ticks correspond to isosurface values
+        # ))
+
+        fig.update_layout(
+            scene_aspectmode='manual',
+            scene_aspectratio=dict(x=1, y=1, z=.25),
+        )
         plotly.offline.plot(fig,
                             filename="/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Simulation/Radar.html",
                             auto_open=False)
