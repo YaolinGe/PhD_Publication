@@ -75,7 +75,6 @@ class Simulator:
 
         self.ground_truth = np.linalg.cholesky(self.knowledge.Sigma) @ \
                             vectorise(np.random.randn(self.knowledge.coordinates.shape[0])) + self.knowledge.mu
-
         LawnMowerPlanningSetup = LawnMowerPlanning(knowledge=self.knowledge)
         LawnMowerPlanningSetup.build_3d_lawn_mower()
         self.lawn_mower_path_3d = LawnMowerPlanningSetup.lawn_mower_path_3d

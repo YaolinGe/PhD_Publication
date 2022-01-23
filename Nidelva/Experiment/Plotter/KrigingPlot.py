@@ -252,6 +252,7 @@ class KrigingPlot:
 
 a = KrigingPlot()
 
+
 #%%
 ind_surface = np.where(a.grid_xyz[:, 2] == 0.5)[0]
 plt.scatter(a.grid_xyz[ind_surface, 0], a.grid_xyz[ind_surface, 1], c = a.mu_posterior[ind_surface], cmap = "Paired", vmin = 10, vmax = 30)

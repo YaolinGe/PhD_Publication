@@ -51,8 +51,13 @@ class DataInterpolator:
         self.lat_sinmod, self.lon_sinmod, self.depth_sinmod, self.salinity_sinmod = \
             map(vectorise, [self.lat_sinmod, self.lon_sinmod, self.depth_sinmod, self.salinity_sinmod])
         t2 = time.time()
+<<<<<<< HEAD
         # print("Loading time consumed: ", t2 - t1)
         # print("SINMOD data is loaded successfully!")
+=======
+        print("Loading time consumed: ", t2 - t1)
+        print("SINMOD data is loaded successfully!")
+>>>>>>> 85c78921ff91ec151c7486ba00deb48142f70ce9
 
     def load_delft3d(self):
         raise NotImplementedError("load delft3d not implemented")
@@ -78,7 +83,11 @@ class DataInterpolator:
         self.dataset_interpolated = pd.DataFrame(np.hstack((self.coordinates, self.salinity_interpolated)), columns = ["lat", "lon", "depth", "salinity"])
         self.dataset_interpolated.to_csv(self.sinmod_datapath + "data_sinmod_interpolated.csv")
         t2 = time.time()
+<<<<<<< HEAD
         # print("Data is interpolated successfully! Time consumed: ", t2 - t1)
+=======
+        print("Data is interpolated successfully! Time consumed: ", t2 - t1)
+>>>>>>> 85c78921ff91ec151c7486ba00deb48142f70ce9
 
     def interpolate_delft3d_data_for_coordinates(self):
         raise NotImplementedError("interpolation for delft3d not implemented yet")

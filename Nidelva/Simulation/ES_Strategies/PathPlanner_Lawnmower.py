@@ -47,6 +47,7 @@ class LawnMowerPlanning:
                         self.lawn_mower_path_2d.append([lat_temp, lon_temp])
         self.lawn_mower_path_2d = self.lawn_mower_path_2d[::-1] # change the starting location.
 
+
     def get_polygon_path(self):
         self.polygon_path = mplPath.Path(self.knowledge.polygon)
 
