@@ -1,14 +1,5 @@
-import numpy as np
-import matplotlib.pyplot as plt
+import imgkit
 
-import arcgis
-from arcgis.gis import GIS
-
-gis = GIS()
-map1 = gis.map("Norway")
-map1
-plt.show()
-
-
-
+imgkit.from_file('/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Visualisation/Myopic2D/myopic2d.html',
+                 '/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Visualisation/Myopic2D/test.jpg')
 
