@@ -27,10 +27,10 @@ class AUVDataIntegrator:
 
     def load_raw_data(self):
         # % Data extraction from the raw data
-        self.rawTemp = pd.read_csv(self.datapath + "Temperature.csv", delimiter=', ', header=0, engine='python')
-        self.rawLoc = pd.read_csv(self.datapath + "EstimatedState.csv", delimiter=', ', header=0, engine='python')
-        self.rawSal = pd.read_csv(self.datapath + "Salinity.csv", delimiter=', ', header=0, engine='python')
-        self.rawDepth = pd.read_csv(self.datapath + "Depth.csv", delimiter=', ', header=0, engine='python')
+        self.rawTemp = pd.read_csv(self.datapath + "Temperature.csv", delimiter=', ', header=0, engine='python', encoding= 'unicode_escape')
+        self.rawLoc = pd.read_csv(self.datapath + "EstimatedState.csv", delimiter=', ', header=0, engine='python', encoding= 'unicode_escape')
+        self.rawSal = pd.read_csv(self.datapath + "Salinity.csv", delimiter=', ', header=0, engine='python', encoding= 'unicode_escape')
+        self.rawDepth = pd.read_csv(self.datapath + "Depth.csv", delimiter=', ', header=0, engine='python', encoding= 'unicode_escape')
         # rawGPS = pd.read_csv(datapath + "GpsFix.csv", delimiter=', ', header=0, engine='python')
         # rawCurrent = pd.read_csv(datapath + "EstimatedStreamVelocity.csv", delimiter=', ', header=0, engine='python')
         print("Raw data is loaded successfully!")

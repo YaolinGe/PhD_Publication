@@ -398,10 +398,10 @@ plot(a)
 def save_processed_data_slices(self):
     self.pred_err = vectorise(np.sqrt(np.diag(self.Sigma_posterior)))
     for i in range(len(self.depth_layers)):
-        ind_depth_layer = np.where(self.coordinates_grid[:, 2] == self.depth_layers[i])[0]
+        ind_depth_layer = np.where(self.grid_wgs84[:, 2] == self.depth_layers[i])[0]
 
 
-        self.dataframe_field = pd.DataFrame(np.hstack((self.coordinates_grid[ind_depth_layer, :],
+        self.dataframe_field = pd.DataFrame(np.hstack((self.grid_wgs84[ind_depth_layer, :],
                                                        self.mu_sinmod[ind_depth_layer, :].reshape(-1, 1),
                                                        self.mu_prior[ind_depth_layer, :].reshape(-1, 1),
                                                        self.mu_posterior[ind_depth_layer, :].reshape(-1, 1),

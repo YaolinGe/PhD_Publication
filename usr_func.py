@@ -1,8 +1,11 @@
 import numpy as np
 from scipy.stats import mvn, norm
 import pathlib
-import os
+import os, time
+from skgstat import Variogram
+import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib import cm
 from scipy.interpolate import griddata
 from scipy.interpolate import interpn
 from scipy.interpolate import NearestNDInterpolator
@@ -160,4 +163,8 @@ def interpolate_3d(x, y, z, value):
     values = np.array(values)
 
     return grid, values
+
+
+def get_indices_equal2value(array, value):
+    return np.where(array == value)[0]
 
