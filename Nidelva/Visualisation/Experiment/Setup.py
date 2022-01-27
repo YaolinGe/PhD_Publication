@@ -112,15 +112,26 @@ class ExperimentSetup:
         plt.show()
 
     def plot_variogram(self):
-
-        V_v = Variogram(coordinates=np.hstack((y_loc[i].reshape(-1, 1), x_loc[i].reshape(-1, 1))),
-                        values=sal_residual[i].squeeze(), use_nugget=True, model="Matern", normalize=False,
+        ind_surface = np.where(self.data_auv['depth'] <= 0.5)[0]
+        lat_surface = self.data_auv['lat'][ind_surface]
+        lon_surface = self.data_auv['lon'][ind_surface]
+        x_surface, y_surface = latlon2xy(lat_surface, lon_surface, 0, 0)
+        sal_surface = self.data_auv['salinity'][ind_surface]
+        wgs_auv = np.hstack((vectorise(lat_surface), vectorise(lon_surface), np.ones([len(lat_surface), 1]) * 0.5))
+        sal_surface_from_sinmod = self.sinmod.getSINMODOnCoordinates(wgs_auv)
+        sal_estimated_from_sinmod = self.coef.beta0[0, 0] + self.coef.beta1[0, 0] * sal_surface_from_sinmod
+        sal_residual = sal_surface - sal_estimated_from_sinmod
+        coordinates = np.hstack((vectorise(x_surface), vectorise(y_surface)))
+        V_v = Variogram(coordinates=coordinates, values=sal_residual, use_nugget=True, model="Matern", normalize=False,
                         n_lags=100)  # model = "Matern" check
         # V_v.estimator = 'cressie'
-        V_v.fit_method = 'trf'  # moment method
+        # V_v.fit_method = 'trf'  # moment method
 
         fig = V_v.plot(hist=False)
         # fig.suptitle("test")
+        plt.show()
+        print("Variogram")
+        print(V_v)
         pass
 
     def save_auv_surface_data(self):
@@ -131,15 +142,36 @@ class ExperimentSetup:
 
 
 setup = ExperimentSetup()
-setup.save_auv_surface_data()
+# setup.save_auv_surface_data()
 print(setup.grid_wgs84)
-
+# os.system("say finished")
+#%%
+setup.plot_variogram()
 #%%
 # setup.prepareAUVData()
-plt.figure()
-plt.plot(setup.data_auv['lon'], setup.data_auv['lat'])
-plt.show()
+# plt.figure()
+# plt.plot(setup.data_auv['lon'], setup.data_auv['lat'])
+# plt.show()
 
+
+fig = go.Figure(data=[go.Scatter3d(
+    x=setup.data_auv["lon"],
+    y=setup.data_auv["lat"],
+    z=-setup.data_auv['depth'],
+    mode='markers',
+    marker=dict(
+        size=12,
+        color=setup.data_auv["salinity"],                # set color to an array/list of desired values
+        colorscale='Viridis',   # choose a colorscale
+        opacity=0.8
+    )
+)])
+
+plotly.offline.plot(fig, filename = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Experiment/variogram.html", auto_open = False)
+os.system("open -a \"Google Chrome\" /Users/yaoling/OneDrive\ -\ NTNU/MASCOT_PhD/Publication/Nidelva/fig/Experiment/variogram.html")
+
+#%%
+# os.system("say hello, Kirsten")
 
 
 
