@@ -5,6 +5,7 @@ Contact: yaolin.ge@ntnu.no
 Date: 2022-01-26
 """
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
 from Nidelva.Experiment.Field.Grid.GridGenerator import GridGenerator
@@ -20,6 +21,8 @@ from plotly.subplots import make_subplots
 
 
 AUV_DATAPATH = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Data/Nidelva/May27/"
+# AUV_DATAPATH = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Data/Nidelva/June17/"
+# AUV_DATAPATH = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Data/Nidelva/July06/"
 AUV_DATAPATH_ADAPTIVE = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Data/Nidelva/July06/Data/Adaptive/"
 SINMOD_PATH = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Data/Nidelva/SINMOD_DATA/samples_2020.05.01.nc"
 STARTING_INDEX = 760 # 850 user-defined
@@ -51,7 +54,7 @@ class ExperimentSetup:
         print(t2 - t1)
 
         t1 = time.time()
-        self.auvDataIntegrator = AUVDataIntegrator(AUV_DATAPATH, "AUVData_May27")
+        self.auvDataIntegrator = AUVDataIntegrator(AUV_DATAPATH, "AUVData")
         self.data_auv = self.auvDataIntegrator.data
         self.sinmod = SINMOD(SINMOD_PATH)
         self.coef = Coef()
@@ -111,28 +114,91 @@ class ExperimentSetup:
         plt.savefig("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Experiment/depth_salinity.pdf")
         plt.show()
 
-    def plot_variogram(self):
-        ind_surface = np.where(self.data_auv['depth'] <= 0.5)[0]
-        lat_surface = self.data_auv['lat'][ind_surface]
-        lon_surface = self.data_auv['lon'][ind_surface]
-        x_surface, y_surface = latlon2xy(lat_surface, lon_surface, 0, 0)
-        sal_surface = self.data_auv['salinity'][ind_surface]
-        wgs_auv = np.hstack((vectorise(lat_surface), vectorise(lon_surface), np.ones([len(lat_surface), 1]) * 0.5))
-        sal_surface_from_sinmod = self.sinmod.getSINMODOnCoordinates(wgs_auv)
-        sal_estimated_from_sinmod = self.coef.beta0[0, 0] + self.coef.beta1[0, 0] * sal_surface_from_sinmod
-        sal_residual = sal_surface - sal_estimated_from_sinmod
-        coordinates = np.hstack((vectorise(x_surface), vectorise(y_surface)))
-        V_v = Variogram(coordinates=coordinates, values=sal_residual, use_nugget=True, model="Matern", normalize=False,
-                        n_lags=100)  # model = "Matern" check
-        # V_v.estimator = 'cressie'
-        # V_v.fit_method = 'trf'  # moment method
+    def separate_regions(self): # section is where the mission is split
+        timestamp = self.data_auv['timestamp']
+        self.ind_sections = np.where(np.abs(np.gradient(timestamp)) > 1)[0]
+        self.ind_sections = np.append(np.zeros(1), self.ind_sections, axis=0)
+        self.ind_section_start = self.ind_sections[np.arange(0, len(self.ind_sections), 2)]
+        self.ind_section_end = self.ind_sections[np.arange(1, len(self.ind_sections), 2)]
 
-        fig = V_v.plot(hist=False)
-        # fig.suptitle("test")
-        plt.show()
-        print("Variogram")
-        print(V_v)
-        pass
+    def get_variogram_for_each_section(self):
+        for i in range(len(self.ind_section_start)):
+            print(i)
+            IND_S = int(self.ind_section_start[i])
+            IND_E = int(self.ind_section_end[i])
+            t1 = time.time()
+            if np.amin(self.data_auv['depth'][IND_S:IND_E]) < 0:
+                self.data_auv['depth'][IND_S:IND_E] = self.data_auv['depth'][IND_S:IND_E] + \
+                                                      np.abs(np.amin(self.data_auv['depth'][IND_S:IND_E]))
+            self.ind_surface = np.where((self.data_auv['depth'][IND_S:IND_E] <= 0.65) *
+                                        (self.data_auv['depth'][IND_S:IND_E] >= 0.35))[0]
+            if len(self.ind_surface):
+                self.ind_surface = self.ind_surface[np.random.randint(0, len(self.ind_surface), 500)]  # select only a few
+                self.lat_surface = self.data_auv['lat'][self.ind_surface]
+                self.lon_surface = self.data_auv['lon'][self.ind_surface]
+                self.x_surface, self.y_surface = latlon2xy(self.lat_surface, self.lon_surface, 0, 0)
+                self.sal_surface = self.data_auv['salinity'][self.ind_surface]
+                self.wgs_auv = np.hstack(
+                    (vectorise(self.lat_surface), vectorise(self.lon_surface), np.ones([len(self.lat_surface), 1]) * 0.5))
+                self.sal_surface_from_sinmod = self.sinmod.getSINMODOnCoordinates(self.wgs_auv)
+                self.sal_estimated_from_sinmod = self.coef.beta0[0, 0] * np.ones_like(self.sal_surface_from_sinmod) + \
+                                                 self.coef.beta1[0, 0] * self.sal_surface_from_sinmod
+                self.sal_residual = self.sal_surface - self.sal_estimated_from_sinmod.squeeze()
+                self.coordinates = np.hstack((vectorise(self.x_surface), vectorise(self.y_surface)))
+
+                V_v = Variogram(coordinates=self.coordinates, values=self.sal_residual.squeeze(), use_nugget=True,
+                                model="Matern",
+                                normalize=False,
+                                n_lags=10)  # model = "Matern" check
+
+                self.range = V_v.parameters[0]
+                self.sill = V_v.parameters[1]
+                self.nugget = V_v.parameters[-1]
+
+                self.variogram_x = V_v.data()[0]
+                self.variogram_y = V_v.data()[1]
+
+                t2 = time.time()
+
+                mycmp = cm.get_cmap("BrBG", 10)
+                fig, axes = plt.subplots(1, 4, figsize=(25, 5))
+                axes[0].scatter(self.lon_surface, self.lat_surface, c=self.sal_surface, cmap=mycmp, vmin=16, vmax=30)
+                axes[0].yaxis.set_major_formatter(FormatStrFormatter('%.3f'))
+                axes[0].xaxis.set_major_formatter(FormatStrFormatter('%.3f'))
+                axes[0].set_xlabel("Lon")
+                axes[0].set_ylabel("Lat")
+
+                axes[1].scatter(self.lon_surface, self.lat_surface, c=self.sal_surface_from_sinmod, cmap=mycmp, vmin=16,
+                                vmax=30)
+                axes[1].yaxis.set_major_formatter(FormatStrFormatter('%.3f'))
+                axes[1].xaxis.set_major_formatter(FormatStrFormatter('%.3f'))
+                axes[1].set_xlabel("Lon")
+                axes[1].set_ylabel("Lat")
+
+                im = axes[2].scatter(self.lon_surface, self.lat_surface, c=self.sal_residual, cmap=mycmp, vmin=-3, vmax=3)
+                axes[2].yaxis.set_major_formatter(FormatStrFormatter('%.3f'))
+                axes[2].xaxis.set_major_formatter(FormatStrFormatter('%.3f'))
+                axes[2].set_xlabel("Lon")
+                axes[2].set_ylabel("Lat")
+                plt.colorbar(im)
+
+                axes[3].plot(self.variogram_x, self.variogram_y, 'k-.')
+                plt.text(0.5, 0.5, str(V_v), horizontalalignment='center',
+                     verticalalignment='center', transform=axes[3].transAxes)
+                axes[3].set_xlabel("Range")
+                axes[3].set_ylabel("Sill")
+                # axes[3].text(self.variogram_x[-1], self.variogram_y[-1], str(V_v))
+                # axes[3].yaxis.set_major_formatter(FormatStrFormatter('%.3f'))
+                plt.tight_layout()
+                plt.savefig("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Experiment/Variogram/P_{:02d}.pdf".format(i))
+            else:
+                print("Not enough data")
+                pass
+            # plt.show()
+
+            # print(V_v)
+            # break
+
 
     def save_auv_surface_data(self):
         ind_surface = np.where(self.data_auv['depth'] <= 0.5)[0]
@@ -142,26 +208,123 @@ class ExperimentSetup:
 
 
 setup = ExperimentSetup()
+setup.separate_regions()
+setup.get_variogram_for_each_section()
 # setup.save_auv_surface_data()
-print(setup.grid_wgs84)
 # os.system("say finished")
 #%%
-setup.plot_variogram()
+
+inds = 11118
+inde = -1
+plt.plot(setup.data_auv['depth'][inds:inde])
+plt.show()
+
+plt.scatter(setup.data_auv['lon'][inds:inde], setup.data_auv['lat'][inds:inde], c=setup.data_auv['salinity'][inds:inde])
+plt.show()
+#%%
+plt.subplot(211)
+plt.plot(setup.data_auv['timestamp'])
+plt.xlim([1020, 1025])
+plt.subplot(212)
+plt.plot(np.gradient(setup.data_auv['timestamp']))
+plt.xlim([1020, 1025])
+plt.show()
+
+#%%
+plt.plot(setup.data_auv['depth'][490:750])
+plt.show()
+
+
+#%%
+self = setup
+IND_S = 490
+IND_E = 750
+t1 = time.time()
+if np.amin(self.data_auv['depth'][IND_S:IND_E]) < 0:
+    self.data_auv['depth'][IND_S:IND_E] = self.data_auv['depth'][IND_S:IND_E] + \
+                                          np.abs(np.amin(self.data_auv['depth'][IND_S:IND_E]))
+self.ind_surface = np.where((self.data_auv['depth'][IND_S:IND_E] <= 0.65) *
+                            (self.data_auv['depth'][IND_S:IND_E] >= 0.35))[0]
+if len(self.ind_surface):
+    self.ind_surface = self.ind_surface[np.random.randint(0, len(self.ind_surface), 500)]  # select only a few
+    self.lat_surface = self.data_auv['lat'][self.ind_surface]
+    self.lon_surface = self.data_auv['lon'][self.ind_surface]
+    self.x_surface, self.y_surface = latlon2xy(self.lat_surface, self.lon_surface, 0, 0)
+    self.sal_surface = self.data_auv['salinity'][self.ind_surface]
+    self.wgs_auv = np.hstack(
+        (vectorise(self.lat_surface), vectorise(self.lon_surface), np.ones([len(self.lat_surface), 1]) * 0.5))
+    self.sal_surface_from_sinmod = self.sinmod.getSINMODOnCoordinates(self.wgs_auv)
+    self.sal_estimated_from_sinmod = self.coef.beta0[0, 0] * np.ones_like(self.sal_surface_from_sinmod) + \
+                                     self.coef.beta1[0, 0] * self.sal_surface_from_sinmod
+    self.sal_residual = self.sal_surface - self.sal_estimated_from_sinmod.squeeze()
+    self.coordinates = np.hstack((vectorise(self.x_surface), vectorise(self.y_surface)))
+
+    V_v = Variogram(coordinates=self.coordinates, values=self.sal_residual.squeeze(), use_nugget=True,
+                    model="Matern",
+                    normalize=False,
+                    n_lags=10)  # model = "Matern" check
+
+    self.range = V_v.parameters[0]
+    self.sill = V_v.parameters[1]
+    self.nugget = V_v.parameters[-1]
+
+    self.variogram_x = V_v.data()[0]
+    self.variogram_y = V_v.data()[1]
+
+    t2 = time.time()
+
+    mycmp = cm.get_cmap("BrBG", 10)
+    fig, axes = plt.subplots(1, 4, figsize=(25, 5))
+    axes[0].scatter(self.lon_surface, self.lat_surface, c=self.sal_surface, cmap=mycmp, vmin=16, vmax=30)
+    axes[0].yaxis.set_major_formatter(FormatStrFormatter('%.3f'))
+    axes[0].xaxis.set_major_formatter(FormatStrFormatter('%.3f'))
+    axes[0].set_xlabel("Lon")
+    axes[0].set_ylabel("Lat")
+
+    axes[1].scatter(self.lon_surface, self.lat_surface, c=self.sal_surface_from_sinmod, cmap=mycmp, vmin=16,
+                    vmax=30)
+    axes[1].yaxis.set_major_formatter(FormatStrFormatter('%.3f'))
+    axes[1].xaxis.set_major_formatter(FormatStrFormatter('%.3f'))
+    axes[1].set_xlabel("Lon")
+    axes[1].set_ylabel("Lat")
+
+    im = axes[2].scatter(self.lon_surface, self.lat_surface, c=self.sal_residual, cmap=mycmp, vmin=-3, vmax=3)
+    axes[2].yaxis.set_major_formatter(FormatStrFormatter('%.3f'))
+    axes[2].xaxis.set_major_formatter(FormatStrFormatter('%.3f'))
+    axes[2].set_xlabel("Lon")
+    axes[2].set_ylabel("Lat")
+    plt.colorbar(im)
+
+    axes[3].plot(self.variogram_x, self.variogram_y, 'k-.')
+    plt.text(0.5, 0.5, str(V_v), horizontalalignment='center',
+             verticalalignment='center', transform=axes[3].transAxes)
+    axes[3].set_xlabel("Range")
+    axes[3].set_ylabel("Sill")
+    # axes[3].text(self.variogram_x[-1], self.variogram_y[-1], str(V_v))
+    # axes[3].yaxis.set_major_formatter(FormatStrFormatter('%.3f'))
+    plt.tight_layout()
+    plt.show()
+
+
+
 #%%
 # setup.prepareAUVData()
 # plt.figure()
 # plt.plot(setup.data_auv['lon'], setup.data_auv['lat'])
 # plt.show()
-
+x = setup.lon_surface
+y = setup.lat_surface
+z = setup.data_auv['depth'][setup.ind_surface]
+values = setup.sal_surface
 
 fig = go.Figure(data=[go.Scatter3d(
-    x=setup.data_auv["lon"],
-    y=setup.data_auv["lat"],
-    z=-setup.data_auv['depth'],
+    x=x,
+    y=y,
+    z=z,
     mode='markers',
     marker=dict(
         size=12,
-        color=setup.data_auv["salinity"],                # set color to an array/list of desired values
+        color=values,                # set color to an array/list of desired values
         colorscale='Viridis',   # choose a colorscale
         opacity=0.8
     )
@@ -171,7 +334,7 @@ plotly.offline.plot(fig, filename = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/P
 os.system("open -a \"Google Chrome\" /Users/yaoling/OneDrive\ -\ NTNU/MASCOT_PhD/Publication/Nidelva/fig/Experiment/variogram.html")
 
 #%%
-# os.system("say hello, Kirsten")
+
 
 
 

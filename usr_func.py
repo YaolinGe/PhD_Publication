@@ -5,6 +5,7 @@ import os, time
 from skgstat import Variogram
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FormatStrFormatter
 from matplotlib import cm
 from scipy.interpolate import griddata
 from scipy.interpolate import interpn
