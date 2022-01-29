@@ -133,13 +133,6 @@ Threshold = 28
 eta = 4.5 / 400
 ksi = 1000 / 24 / 0.5
 
-grid = []
-for k in z:
-    for i in x:
-        for j in y:
-            grid.append([i, j, k])
-
-grid = np.array(grid)
 H_grid = compute_H(grid, grid, ksi)
 Sigma_prior = Matern_cov(sigma, eta, H_grid)
 

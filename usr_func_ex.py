@@ -286,6 +286,32 @@ def getCoordinates(box, nx, ny, distance, alpha):
 
 def GetSINMODFromCoordinates(SINMOD, coordinates, depth):
     '''
+    get sinmod data from coordinates with depth
+    :param SINMOD:
+    :param coordinates:
+    :param depth:
+    :return:
+    '''
+    salinity = np.mean(SINMOD['salinity'][:, :, :, :], axis=0)
+    temperature = np.mean(SINMOD['temperature'][:, :, :, :], axis=0) - 273.15
+    depth_sinmod = np.array(SINMOD['zc'])
+    lat_sinmod = np.array(SINMOD['gridLats'][:, :]).reshape(-1, 1)
+    lon_sinmod = np.array(SINMOD['gridLons'][:, :]).reshape(-1, 1)
+    sal_sinmod = np.zeros([coordinates.shape[0], 1])
+    temp_sinmod = np.zeros([coordinates.shape[0], 1])
+
+    for i in range(coordinates.shape[0]):
+        lat, lon = coordinates[i]
+        ind_depth = np.where(np.array(depth_sinmod) == depth)[0][0]
+        idx = np.argmin((lat_sinmod - lat) ** 2 + (lon_sinmod - lon) ** 2)
+        sal_sinmod[i] = salinity[ind_depth].reshape(-1, 1)[idx]
+        temp_sinmod[i] = temperature[ind_depth].reshape(-1, 1)[idx]
+    return sal_sinmod, temp_sinmod
+
+
+def getSIMODfromCoordinates(SINMOD, coordinates, depth):
+    '''
+    get sinmod purely from coordinates
     :param SINMOD:
     :param coordinates:
     :param depth:

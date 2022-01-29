@@ -12,7 +12,7 @@ import warnings
 class GridGenerator:
 
     def __init__(self, gridConfig):
-        self.WGScoordinages_grid = []
+        self.coordinates_grid_wgs = []
         self.xyz_grid_usr = []
         self.gridConfig = gridConfig
         self.getGridCoordinates()
@@ -30,10 +30,9 @@ class GridGenerator:
     def getGridCoordinates(self):
         self.getGridXYZ()
         RotationalMatrix_USR2WGS = getRotationalMatrix_USR2WGS(self.gridConfig.angle_rotation)
-        print(RotationalMatrix_USR2WGS)
         self.xyz_grid_wgs = (RotationalMatrix_USR2WGS @ self.xyz_grid_usr.T).T
         grid_lat, grid_lon = xy2latlon(self.xyz_grid_wgs[:, 0], self.xyz_grid_wgs[:, 1], self.gridConfig.lat_pivot, self.gridConfig.lon_pivot)
-        self.WGScoordinages_grid = np.hstack((vectorise(grid_lat), vectorise(grid_lon), vectorise(self.xyz_grid_wgs[:, 2])))
+        self.coordinates_grid_wgs = np.hstack((vectorise(grid_lat), vectorise(grid_lon), vectorise(self.xyz_grid_wgs[:, 2])))
         self.grid_comparison = np.vstack((self.xyz_grid_usr, self.xyz_grid_wgs))
 
     @property
@@ -42,7 +41,7 @@ class GridGenerator:
 
     @property
     def coordinates(self):
-        return self.WGScoordinages_grid
+        return self.coordinates_grid_wgs
 
 
 

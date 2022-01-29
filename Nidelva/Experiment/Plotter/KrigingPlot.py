@@ -15,7 +15,7 @@ import plotly
 from plotly.subplots import make_subplots
 
 
-AUV_DATAPATH = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Data/Nidelva/July06/Data/Adaptive/"
+AUV_DATAPATH = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Data/Nidelva/July06/Adaptive/"
 SINMOD_PATH = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Data/Nidelva/SINMOD_DATA/samples_2020.05.01.nc"
 PIVOT = 63.446905, 10.419426  # right bottom corner
 ANGLE_ROTATION = deg2rad(60)
@@ -39,7 +39,7 @@ class KrigingPlot:
         t1 = time.time()
         self.gridConfig = GridConfig(PIVOT, ANGLE_ROTATION, NX, NY, NZ, XLIM, YLIM, ZLIM)
         self.gridGenerator = GridGenerator(self.gridConfig)
-        self.grid_xyz = self.gridGenerator.xyz
+        self.xyz_grid = self.gridGenerator.xyz
         self.coordinates_grid = self.gridGenerator.coordinates
         t2 = time.time()
         print(t2 - t1)
@@ -47,19 +47,19 @@ class KrigingPlot:
         t1 = time.time()
         self.auvDataIntegrator = AUVDataIntegrator(AUV_DATAPATH, "AdaptiveData")
         self.data_auv = self.auvDataIntegrator.data
-        self.sinmod = SINMOD("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Data/Nidelva/SINMOD_DATA/samples_2020.05.01.nc")
+        self.sinmod = SINMOD(SINMOD_PATH)
         self.coef = Coef()
         t2 = time.time()
         print(t2 - t1)
 
         t1 = time.time()
         self.prepareAUVData()
-        self.Kriging()
-        self.plot()
+        # self.Kriging()
+        # self.plot()
         t2 = time.time()
         print("Kriging takes ", t2 - t1)
 
-        self.save_processed_data()
+        # self.save_processed_data()
 
         pass
 
@@ -73,13 +73,13 @@ class KrigingPlot:
         RotationalMatrix_WGS2USR = getRotationalMatrix_WGS2USR(self.gridConfig.angle_rotation)
         self.xyz_auv_wgs = np.hstack((vectorise(x_auv_wgs), vectorise(y_auv_wgs), vectorise(depth_auv_wgs)))
         self.xyz_auv_usr = (RotationalMatrix_WGS2USR @ self.xyz_auv_wgs.T).T
-        self.WGScoordinates_auv = np.hstack((lat_auv_wgs, lon_auv_wgs, depth_auv_wgs))
+        self.coordinates_auv_wgs = np.hstack((lat_auv_wgs, lon_auv_wgs, depth_auv_wgs))
         self.depth_auv_rounded = vectorise(round2base(depth_auv_wgs, .5))
 
         self.salinity_auv = vectorise(self.data_auv["salinity"][self.ind_mission_start:])
-        self.mu_sinmod_at_auv_loc = self.sinmod.getSINMODOnCoordinates(self.WGScoordinates_auv)
+        self.mu_sinmod_at_auv_loc = self.sinmod.getSINMODOnCoordinates(self.coordinates_auv_wgs)
 
-        self.depth_layers = vectorise(np.unique(self.grid_xyz[:, 2]))
+        self.depth_layers = vectorise(np.unique(self.xyz_grid[:, 2]))
         self.DM_depth_auv_rounded = np.abs(self.depth_auv_rounded @ np.ones([1, len(self.depth_layers)]) - np.ones([len(self.depth_auv_rounded), 1]) @ self.depth_layers.T)
         self.ind_depth_layer = np.argmin(self.DM_depth_auv_rounded, axis = 1)
 
@@ -88,21 +88,26 @@ class KrigingPlot:
 
     def Kriging(self):
         self.mu_sinmod = self.sinmod.getSINMODOnCoordinates(self.coordinates_grid)
-
-        self.beta0_sinmod = np.kron(np.ones([NX * NY, 1]), self.coef.beta0[:, 0].reshape(-1, 1))
-        self.beta1_sinmod = np.kron(np.ones([NX * NY, 1]), self.coef.beta1[:, 0].reshape(-1, 1))
-        self.mu_prior = self.beta0_sinmod + self.beta1_sinmod * self.mu_sinmod
+        self.mu_prior = []
+        for i in range(self.mu_sinmod.shape[0]):
+            ind_depth_layer = np.where(self.coordinates_grid[i, 2] == self.depth_layers)[0]
+            self.mu_prior.append(self.coef.beta0[ind_depth_layer, 0] +
+                                 self.coef.beta1[ind_depth_layer, 0] * self.mu_sinmod[i])
+        self.mu_prior = np.array(self.mu_prior)
+        # self.beta0_sinmod = np.kron(np.ones([NX * NY, 1]), self.coef.beta0[:, 0].reshape(-1, 1))
+        # self.beta1_sinmod = np.kron(np.ones([NX * NY, 1]), self.coef.beta1[:, 0].reshape(-1, 1))
+        # self.mu_prior = self.beta0_sinmod + self.beta1_sinmod * self.mu_sinmod
 
         # Grid
         self.Sigma_grid = MaternKernel(self.coordinates_grid, self.coordinates_grid, SILL, RANGE_LATERAL, RANGE_VERTICAL, NUGGET).Sigma
 
         # Grid-Obs
-        self.Sigma_grid_obs = MaternKernel(self.coordinates_grid, self.WGScoordinates_auv, SILL, RANGE_LATERAL, RANGE_VERTICAL, NUGGET).Sigma
+        self.Sigma_grid_obs = MaternKernel(self.coordinates_grid, self.coordinates_auv_wgs, SILL, RANGE_LATERAL, RANGE_VERTICAL, NUGGET).Sigma
 
         # Obs
-        self.Sigma_obs = MaternKernel(self.WGScoordinates_auv, self.WGScoordinates_auv, SILL, RANGE_LATERAL, RANGE_VERTICAL, NUGGET).Sigma
+        self.Sigma_obs = MaternKernel(self.coordinates_auv_wgs, self.coordinates_auv_wgs, SILL, RANGE_LATERAL, RANGE_VERTICAL, NUGGET).Sigma
 
-        self.mu_posterior = self.mu_prior + self.Sigma_grid_obs @ np.linalg.solve(self.Sigma_obs, (self.salinity_auv - self.mu_sinmod_at_auv_loc))
+        self.mu_posterior = self.mu_prior + self.Sigma_grid_obs @ np.linalg.solve(self.Sigma_obs, (self.salinity_auv - self.mu_estimated))
         self.Sigma_posterior = self.Sigma_grid - self.Sigma_grid_obs @ np.linalg.solve(self.Sigma_obs, self.Sigma_grid_obs.T)
         self.excursion_prob = EP_1D(self.mu_posterior, self.Sigma_posterior, THRESHOLD_SALINITY)
 
@@ -110,45 +115,45 @@ class KrigingPlot:
         fig = make_subplots(rows=1, cols=3, specs=[[{'type': 'scene'}, {'type': 'scene'}, {'type': 'scene'}]],
                             subplot_titles=("Prior field", "Posterior field", "Posterior excursion probability"))
         fig.add_trace(go.Volume(
-            x=self.grid_xyz[:, 1],
-            y=self.grid_xyz[:, 0],
-            z=-self.grid_xyz[:, 2],
+            x=self.xyz_grid[:, 1],
+            y=self.xyz_grid[:, 0],
+            z=-self.xyz_grid[:, 2],
             value=self.mu_prior.flatten(),
             isomin=0,
             isomax=28,
             opacity=.1,
             surface_count=30,
-            colorscale="rainbow",
+            colorscale="BrBG",
             # coloraxis="coloraxis1",
             colorbar=dict(x=0.3, y=0.5, len=.5),
-            reversescale=True,
+            # reversescale=True,
             caps=dict(x_show=False, y_show=False, z_show=False),
         ),
             row=1, col=1
         )
 
         fig.add_trace(go.Volume(
-            x=self.grid_xyz[:, 1],
-            y=self.grid_xyz[:, 0],
-            z=-self.grid_xyz[:, 2],
+            x=self.xyz_grid[:, 1],
+            y=self.xyz_grid[:, 0],
+            z=-self.xyz_grid[:, 2],
             value=self.mu_posterior.flatten(),
             isomin=0,
             isomax=28,
             opacity=.1,
             surface_count=30,
-            colorscale="rainbow",
+            colorscale="BrBG",
             # coloraxis="coloraxis1",
             colorbar=dict(x=0.65, y=0.5, len=.5),
-            reversescale=True,
+            # reversescale=True,
             caps=dict(x_show=False, y_show=False, z_show=False),
         ),
             row=1, col=2
         )
 
         fig.add_trace(go.Volume(
-            x=self.grid_xyz[:, 1],
-            y=self.grid_xyz[:, 0],
-            z=-self.grid_xyz[:, 2],
+            x=self.xyz_grid[:, 1],
+            y=self.xyz_grid[:, 0],
+            z=-self.xyz_grid[:, 2],
             value=self.excursion_prob.flatten(),
             isomin=0,
             isomax=1,
@@ -157,7 +162,7 @@ class KrigingPlot:
             colorscale="gnbu",
             # coloraxis="coloraxis1",
             colorbar=dict(x=1, y=0.5, len=.5),
-            reversescale=True,
+            # reversescale=True,
             caps=dict(x_show=False, y_show=False, z_show=False),
         ),
             row=1, col=3
@@ -243,7 +248,7 @@ class KrigingPlot:
             "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Experiment/Data/field_data.csv")
 
         self.dataframe_auv = pd.DataFrame(
-            np.hstack((self.WGScoordinates_auv, self.mu_sinmod_at_auv_loc, self.mu_estimated)),
+            np.hstack((self.coordinates_auv_wgs, self.mu_sinmod_at_auv_loc, self.mu_estimated)),
             columns=["lat", "lon", "depth", "mean_sinmod_at_auv_loc", "mean_estimated"])
         self.dataframe_auv.to_csv(
             "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Experiment/Data/auv_data.csv")
@@ -251,13 +256,28 @@ class KrigingPlot:
         pass
 
 a = KrigingPlot()
-
-
+# a.prepareAUVData()
+a.Kriging()
 #%%
-ind_surface = np.where(a.grid_xyz[:, 2] == 0.5)[0]
-plt.scatter(a.grid_xyz[ind_surface, 0], a.grid_xyz[ind_surface, 1], c = a.mu_posterior[ind_surface], cmap = "Paired", vmin = 10, vmax = 30)
+
+a.plot()
+#%%
+ind_surface = np.where(a.xyz_grid[:, 2] == 0.5)[0]
+plt.scatter(a.xyz_grid[ind_surface, 0], a.xyz_grid[ind_surface, 1], c = a.mu_posterior[ind_surface], cmap ="Paired", vmin = 10, vmax = 30)
 
 plt.colorbar()
+plt.show()
+#%%
+a.prepareAUVData()
+a.Kriging()
+#%%
+plt.plot(a.mu_posterior)
+plt.plot(mu_cond)
+plt.show()
+#%%
+
+plt.plot(a.mu_estimated)
+plt.plot(mu_sal_est)
 plt.show()
 
 
@@ -269,15 +289,15 @@ def plot(self):
     fig = make_subplots(rows=1, cols=3, specs=[[{'type': 'scene'}, {'type': 'scene'}, {'type': 'scene'}]],
                         subplot_titles=("Prior field", "Posterior field", "Posterior excursion probability"))
     fig.add_trace(go.Volume(
-        x=self.grid_xyz[:, 1],
-        y=self.grid_xyz[:, 0],
-        z=-self.grid_xyz[:, 2],
+        x=self.xyz_grid[:, 1],
+        y=self.xyz_grid[:, 0],
+        z=-self.xyz_grid[:, 2],
         value=self.mu_prior.flatten(),
         isomin=0,
         isomax=28,
         opacity=.1,
         surface_count=30,
-        colorscale="Blues",
+        colorscale="BrBG",
         # coloraxis="coloraxis1",
         colorbar=dict(x=0.3, y=0.5, len=.5),
         # reversescale=True,
@@ -287,15 +307,15 @@ def plot(self):
     )
 
     fig.add_trace(go.Volume(
-        x=self.grid_xyz[:, 1],
-        y=self.grid_xyz[:, 0],
-        z=-self.grid_xyz[:, 2],
+        x=self.xyz_grid[:, 1],
+        y=self.xyz_grid[:, 0],
+        z=-self.xyz_grid[:, 2],
         value=self.mu_posterior.flatten(),
         isomin=0,
         isomax=28,
         opacity=.1,
         surface_count=30,
-        colorscale="Blues",
+        colorscale="BrBG",
         # coloraxis="coloraxis1",
         colorbar=dict(x=0.65, y=0.5, len=.5),
         # reversescale=True,
@@ -305,9 +325,9 @@ def plot(self):
     )
 
     fig.add_trace(go.Volume(
-        x=self.grid_xyz[:, 1],
-        y=self.grid_xyz[:, 0],
-        z=-self.grid_xyz[:, 2],
+        x=self.xyz_grid[:, 1],
+        y=self.xyz_grid[:, 0],
+        z=-self.xyz_grid[:, 2],
         value=self.excursion_prob.flatten(),
         isomin=0,
         isomax=1,
@@ -316,7 +336,7 @@ def plot(self):
         colorscale="gnbu",
         # coloraxis="coloraxis1",
         colorbar=dict(x=1, y=0.5, len=.5),
-        reversescale=True,
+        # reversescale=True,
         caps=dict(x_show=False, y_show=False, z_show=False),
     ),
         row=1, col=3
@@ -414,7 +434,7 @@ def save_processed_data_slices(self):
         self.dataframe_field.to_csv("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Experiment/Data/field_data_{:d}.csv".format(i), index=False)
 
     self.dataframe_auv = pd.DataFrame(
-        np.hstack((self.WGScoordinates_auv, self.mu_sinmod_at_auv_loc, self.mu_estimated)),
+        np.hstack((self.coordinates_auv_wgs, self.mu_sinmod_at_auv_loc, self.mu_estimated)),
         columns=["lat", "lon", "depth", "mean_sinmod_at_auv_loc", "mean_estimated"])
     self.dataframe_auv.to_csv(
         "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Experiment/Data/auv_data.csv", index=False)

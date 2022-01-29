@@ -47,7 +47,7 @@ def plotGridonMap(grid):
     color_scatter(gmap, grid[:, 0], grid[:, 1], np.zeros_like(grid[:, 0]), size=20, colormap='hsv')
     gmap.draw("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Missions/MapPlot/map.html")
 
-plotGridonMap(a.WGScoordinages_grid)
+plotGridonMap(a.coordinates_grid_wgs)
 import os
 os.system("open -a \"Google Chrome\" /Users/yaoling/OneDrive\ -\ NTNU/MASCOT_PhD/Missions/MapPlot/map.html")
 
