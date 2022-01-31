@@ -14,11 +14,12 @@ from plotly.subplots import make_subplots
 
 class ContentPlot:
 
-    def __init__(self, knowledge=None, vmin=28, vmax=28, filename="mean", html=False):
+    def __init__(self, knowledge=None, trajectory=None, vmin=28, vmax=28, filename="mean", html=False):
         if knowledge is None:
             raise ValueError("")
         self.knowledge = knowledge
         self.coordinates = self.knowledge.coordinates
+        self.trajectory = np.array(trajectory)
         self.vmin = vmin
         self.vmax = vmax
         self.filename = filename
@@ -33,7 +34,8 @@ class ContentPlot:
         number_of_plots = len(depth_layer)
         points_mean, values_mean = interpolate_3d(lon, lat, depth, self.knowledge.mu)
         points_es, values_es = interpolate_3d(lon, lat, depth, self.knowledge.excursion_set)
-        trajectory = np.array(self.knowledge.trajectory)
+        # trajectory = np.array(self.knowledge.trajectory)
+        trajectory = self.trajectory
         # print(self.knowledge.trajectory)
         # trajectory = np.append(trajectory, np.array([[self.knowledge.coordinates[self.knowledge.ind_now, 0],
         #                                               self.knowledge.coordinates[self.knowledge.ind_now, 1],
@@ -160,6 +162,7 @@ class ContentPlot:
             scene_camera=camera,
         )
 
-        plotly.offline.plot(fig, filename = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Visualisation/Lawnmower/"+self.filename+".html", auto_open = False)
-        os.system("open -a \"Google Chrome\" /Users/yaoling/OneDrive\ -\ NTNU/MASCOT_PhD/Publication/Nidelva/fig/Visualisation/Lawnmower/"+self.filename+".html")
+        # plotly.offline.plot(fig, filename = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Visualisation/Lawnmower/"+self.filename+".html", auto_open = False)
+        # os.system("open -a \"Google Chrome\" /Users/yaoling/OneDrive\ -\ NTNU/MASCOT_PhD/Publication/Nidelva/fig/Visualisation/Lawnmower/"+self.filename+".html")
+        fig.write_image("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Visualisation/Lawnmower/"+self.filename+".png", width=1980, height=1080)
 

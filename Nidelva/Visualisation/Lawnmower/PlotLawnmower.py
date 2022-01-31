@@ -94,17 +94,15 @@ class Lawnmower:
 
             self.knowledge.step_no = i
             self.knowledge = Sampler(self.knowledge, self.ground_truth, ind_sample).Knowledge
-        self.get_excursion_set()
-        # print(self.trajectory)
-        self.trajectory = np.array(self.trajectory)
-        self.knowledge.trajectory = self.trajectory
-        ContentPlot(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX, filename="lawnmower", html=False)
+
+            self.get_excursion_set()
+            ContentPlot(knowledge=self.knowledge, trajectory=self.trajectory, vmin=VMIN, vmax=VMAX, filename="P_{:02d}".format(i), html=False)
 
     def get_excursion_set(self):
         self.knowledge.excursion_set = np.zeros_like(self.knowledge.mu)
         self.knowledge.excursion_set[self.knowledge.mu < self.knowledge.threshold_salinity] = True
 
-a = Lawnmower(steps=30)
+a = Lawnmower(steps=20)
 a.run_lawn_mower()
 
 

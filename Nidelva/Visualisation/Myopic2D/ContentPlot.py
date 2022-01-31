@@ -7,9 +7,6 @@ Date: 2022-01-25
 
 
 from usr_func import *
-import plotly.graph_objects as go
-import plotly
-from plotly.subplots import make_subplots
 
 
 class ContentPlot:
@@ -18,7 +15,7 @@ class ContentPlot:
         if knowledge is None:
             raise ValueError("")
         self.knowledge = knowledge
-        self.path_yoyo = yoyo
+        self.path_yoyo = np.array(yoyo)
         self.coordinates = self.knowledge.coordinates
         self.vmin = vmin
         self.vmax = vmax
@@ -126,21 +123,22 @@ class ContentPlot:
             )
 
         # == YOYO ==
-        fig.add_trace(go.Scatter3d(
-            # print(trajectory),
-            x=self.path_yoyo[:, 1],
-            y=self.path_yoyo[:, 0],
-            z=-self.path_yoyo[:, 2],
-            mode='lines',
-            line=dict(
-                color="orange",
-                width=3,
-                showscale=False,
+        if self.path_yoyo:
+            fig.add_trace(go.Scatter3d(
+                # print(trajectory),
+                x=self.path_yoyo[:, 1],
+                y=self.path_yoyo[:, 0],
+                z=-self.path_yoyo[:, 2],
+                mode='lines',
+                line=dict(
+                    color="orange",
+                    width=3,
+                    showscale=False,
+                ),
+                showlegend=False,
             ),
-            showlegend=False,
-        ),
-        row='all', col='all'
-        )
+            row='all', col='all'
+            )
 
         fig.add_trace(go.Scatter3d(
             x=[self.knowledge.coordinates[self.knowledge.ind_now, 1]],
@@ -192,6 +190,7 @@ class ContentPlot:
             scene_camera=camera,
         )
 
-        plotly.offline.plot(fig, filename = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Visualisation/Myopic2D/"+self.filename+".html", auto_open = False)
-        os.system("open -a \"Google Chrome\" /Users/yaoling/OneDrive\ -\ NTNU/MASCOT_PhD/Publication/Nidelva/fig/Visualisation/Myopic2D/"+self.filename+".html")
+        # plotly.offline.plot(fig, filename = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Visualisation/Myopic2D/"+self.filename+".html", auto_open = False)
+        # os.system("open -a \"Google Chrome\" /Users/yaoling/OneDrive\ -\ NTNU/MASCOT_PhD/Publication/Nidelva/fig/Visualisation/Myopic2D/"+self.filename+".html")
+        fig.write_image("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Visualisation/Myopic2D/"+self.filename+".png", width=1980, height=1080)
 

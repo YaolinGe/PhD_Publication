@@ -7,6 +7,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
 from matplotlib import cm
+
+# Plotly 3D plot
+import plotly.graph_objects as go
+import plotly
+from plotly.subplots import make_subplots
+plotly.io.orca.config.executable = '/usr/local/bin/orca'
+plotly.io.orca.config.save()
+
 from scipy.interpolate import griddata
 from scipy.interpolate import interpn
 from scipy.interpolate import NearestNDInterpolator
