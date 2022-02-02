@@ -83,18 +83,18 @@ class Myopic3D:
         self.ind_start = get_grid_ind_at_nearest_loc(self.starting_loc, self.knowledge.coordinates) # get nearest neighbour
         self.knowledge.ind_prev = self.knowledge.ind_now = self.ind_sample = self.ind_start
 
-        # filename = "myopic3d"
+        filename = "myopic3d"
         for i in range(self.steps):
             print("Step No. ", i)
-            filename = "P_{:02d}".format(i)
+            # filename = "P_{:02d}".format(i)
             self.knowledge = Sampler(self.knowledge, self.ground_truth, self.ind_sample).Knowledge
             lat_next, lon_next, depth_next = MyopicPlanning_3D(knowledge=self.knowledge).next_waypoint
             self.ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next],self.knowledge.coordinates)
             self.knowledge.step_no = i
-            self.get_excursion_set()
-            ContentPlot(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX, filename=filename, html=False)
-        # self.get_excursion_set()
-        # ContentPlot(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX, filename=filename, html=False)
+            # self.get_excursion_set()
+            # ContentPlot(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX, filename=filename, html=False)
+        self.get_excursion_set()
+        ContentPlot(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX, filename=filename, html=False)
 
     def get_excursion_set(self):
         self.knowledge.excursion_set = np.zeros_like(self.knowledge.mu)

@@ -64,8 +64,6 @@ class ExperimentSetup:
         # self.save_grid()
         # self.plot_depth_salinity()
 
-
-
         pass
 
     def prepareAUVData(self):
@@ -99,19 +97,36 @@ class ExperimentSetup:
         df.to_csv("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Experiment/Config/grid.csv", index=False)
 
     def plot_depth_salinity(self):
+
+        # == rearrange sinmod data ==
+        depth_sinmod = []
+        salinity_sinmod = []
+        for i in range(len(self.sinmod.depth_sinmod)):
+            # if i >= 20:
+            #     break
+            for j in range(self.sinmod.salinity_sinmod[i].shape[0]):
+                for k in range(self.sinmod.salinity_sinmod[i].shape[1]):
+                    depth_sinmod.append(self.sinmod.depth_sinmod[i])
+                    salinity_sinmod.append(self.sinmod.salinity_sinmod[i, j, k])
+
         mycmp = cm.get_cmap('BrBG', 10)
         plt.figure(figsize=(5, 5))
-        plt.scatter(x=self.data_auv['salinity'], y=np.abs(self.data_auv['depth']), c=self.data_auv['salinity'],
-                    cmap=mycmp, label='Samples')
-        plt.colorbar()
+        # plt.scatter(x=self.data_auv['salinity'], y=np.abs(self.data_auv['depth']), c=self.data_auv['salinity'],
+        #             cmap=mycmp, label='Samples')
+        plt.scatter(x=salinity_sinmod, y=depth_sinmod, c="red", label='SINMOD samples')
+        plt.scatter(x=self.data_auv['salinity'], y=np.abs(self.data_auv['depth']), c="black", alpha=.25,
+                    label='AUV samples')
+
+        # plt.scatter(x=self.data_auv['salinity'], y=np.abs(self.data_auv['depth']), c="black", label='Samples')
+        # plt.colorbar()
         plt.grid()
         plt.xlabel("Salinity [ppt]")
         plt.ylabel('Depth [m]')
-        # plt.title("AUV samples plot")
+        plt.title("Depth versus salinity plot")
         plt.gca().invert_yaxis()
         plt.tight_layout()
-        # plt.legend()
-        plt.savefig("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Experiment/depth_salinity.pdf")
+        plt.legend()
+        plt.savefig("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Experiment/depth_salinity_comparison.pdf")
         plt.show()
 
     def separate_regions(self): # section is where the mission is split
@@ -199,6 +214,101 @@ class ExperimentSetup:
             # print(V_v)
             # break
 
+    def get_variogram_for_selected_data_samples_and_depth(self):
+        # TODO: change it to automatically generated tolerance for depth
+        # TODO: change index for start and end to auto
+        # == Lateral variogram ==
+        IND_S = 500
+        IND_E = 700
+
+        depth_data_auv = self.data_auv['depth'][IND_S:IND_E]
+        t1 = time.time()
+        if np.amin(depth_data_auv) < 0:
+            depth_data_auv = depth_data_auv + np.abs(np.amin(depth_data_auv))
+        self.ind_surface = np.where((depth_data_auv <= 0.65) * (depth_data_auv >= 0.35))[0]
+        if len(self.ind_surface):
+            # self.ind_surface = self.ind_surface[np.random.randint(0, len(self.ind_surface), 100)]  # select only a few
+            self.lat_surface = self.data_auv['lat'][self.ind_surface]
+            self.lon_surface = self.data_auv['lon'][self.ind_surface]
+            self.x_surface, self.y_surface = latlon2xy(self.lat_surface, self.lon_surface, 0, 0)
+            self.sal_surface = self.data_auv['salinity'][self.ind_surface]
+            self.wgs_auv = np.hstack(
+                (vectorise(self.lat_surface), vectorise(self.lon_surface), np.ones([len(self.lat_surface), 1]) * 0.5))
+            self.sal_surface_from_sinmod = self.sinmod.getSINMODOnCoordinates(self.wgs_auv)
+            self.sal_estimated_from_sinmod = self.coef.beta0[0, 0] * np.ones_like(self.sal_surface_from_sinmod) + \
+                                             self.coef.beta1[0, 0] * self.sal_surface_from_sinmod
+            self.sal_residual = self.sal_surface - self.sal_estimated_from_sinmod.squeeze()
+            self.coordinates = np.hstack((vectorise(self.x_surface), vectorise(self.y_surface)))
+
+            V_v = Variogram(coordinates=self.coordinates, values=self.sal_residual.squeeze(), use_nugget=True,
+                            # model="Matern",
+                            normalize=False,
+                            n_lags=10)  # model = "Matern" check
+
+            self.range_lateral = V_v.parameters[0]
+            self.sill_lateral = V_v.parameters[1]
+            self.nugget_lateral = V_v.parameters[-1]
+
+            self.variogram_x_lateral = V_v.data()[0]
+            self.variogram_y_lateral = V_v.data()[1]
+
+            t2 = time.time()
+            print("Lateral variogram analysis is completed, time consumed: ", t2 - t1)
+
+        # == Depth variogram ==
+
+        self.sal_ave_depth_sinmod = np.mean(np.mean(self.sinmod.salinity_sinmod, axis=1), axis=1)
+        self.depth_auv_rounded = vectorise(round2base(vectorise(self.data_auv["depth"]), .5))
+        self.depth_auv_rounded_unique = np.unique(self.depth_auv_rounded)
+        # self.sal_depth_auv = vectorise(self.data_auv["salinity"])
+        self.sal_ave_depth_auv = []
+        self.sal_ave_depth_residual = []
+        self.depth_variogram = []
+        for i in range(len(self.depth_auv_rounded_unique)):
+            ind_depth_layer = np.where(self.depth_auv_rounded == self.depth_auv_rounded_unique[i])[0]
+            sal_ave_depth_auv_depth_layer = np.mean(self.data_auv['salinity'][ind_depth_layer])
+            self.sal_ave_depth_auv.append(sal_ave_depth_auv_depth_layer)
+            ind_sinmod = np.where(self.sinmod.depth_sinmod == self.depth_auv_rounded_unique[i])[0]
+            if ind_sinmod:
+                self.depth_variogram.append(self.depth_auv_rounded_unique[i])
+                self.sal_ave_depth_residual.append(sal_ave_depth_auv_depth_layer - self.sal_ave_depth_sinmod[ind_sinmod])
+
+        self.sal_ave_depth_residual = vectorise(self.sal_ave_depth_residual)
+        self.depth_variogram = vectorise(self.depth_variogram)
+        coordinates = np.hstack((np.ones([len(self.depth_variogram), 1]), self.depth_variogram))
+
+        V_v = Variogram(coordinates=coordinates, values=self.sal_ave_depth_residual.squeeze(), use_nugget=True,
+                        # model="Matern",
+                        normalize=False,
+                        n_lags=10)  # model = "Matern" check
+
+        self.range_vertical = V_v.parameters[0]
+        self.sill_vertical = V_v.parameters[1]
+        self.nugget_vertical = V_v.parameters[-1]
+
+        self.variogram_x_vertical = V_v.data()[0]
+        self.variogram_y_vertical = V_v.data()[1]
+
+        # plt.figure(figsize=(5,5))
+        plt.subplot(121)
+        plt.plot(self.variogram_x_lateral, self.variogram_y_lateral, 'k-.')
+        plt.xlim([0, 320])
+        plt.ylim([0, 3])
+        plt.grid()
+        plt.xlabel("Lateral range [m]")
+        plt.ylabel("Sill")
+
+        plt.subplot(122)
+        plt.plot(self.variogram_x_vertical, self.variogram_y_vertical, 'k-.')
+        plt.xlim([0, 10])
+        plt.ylim([0, .5])
+        plt.grid()
+        plt.xlabel("Vertical range [m]")
+        # plt.ylabel("Sill")
+        plt.suptitle("Empirical variogram")
+        plt.tight_layout()
+        plt.savefig("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Experiment/Variogram/variogram.pdf")
+        plt.show()
 
     def save_auv_surface_data(self):
         ind_surface = np.where(self.data_auv['depth'] <= 0.5)[0]
@@ -208,13 +318,15 @@ class ExperimentSetup:
 
 
 setup = ExperimentSetup()
-setup.separate_regions()
-setup.get_variogram_for_each_section()
+setup.plot_depth_salinity()
+# setup.get_variogram_for_selected_data_samples_and_depth()
+# setup.separate_regions()
+# setup.get_variogram_for_each_section()
 # setup.save_auv_surface_data()
 # os.system("say finished")
 #%%
 
-inds = 11118
+inds = 0
 inde = -1
 plt.plot(setup.data_auv['depth'][inds:inde])
 plt.show()
@@ -231,22 +343,45 @@ plt.xlim([1020, 1025])
 plt.show()
 
 #%%
+setup.separate_regions()
+print("IND START: ", setup.ind_section_start)
+print("IND END: ", setup.ind_section_end)
+
+# IND START:  [    0.  1022.  2166.  4685.  5141.  7480. 10008. 11118.]
+# IND END:  [ 1021.  2165.  4684.  5140.  7479. 10007. 11117.]
+
+
+#%%
 plt.plot(setup.data_auv['depth'][490:750])
 plt.show()
+
+#%%
+location = np.array([[63.447925, 10.410633]])
+df = pd.DataFrame(location, columns=['lat', 'lon'])
+df.to_csv("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/GIS/location.csv", index=False)
+
 
 
 #%%
 self = setup
+# Working
 IND_S = 490
 IND_E = 750
+
+# IND_S = 520
+# IND_E = 720
+#
+# IND_S = 0
+# IND_E = -1
+
 t1 = time.time()
 if np.amin(self.data_auv['depth'][IND_S:IND_E]) < 0:
     self.data_auv['depth'][IND_S:IND_E] = self.data_auv['depth'][IND_S:IND_E] + \
                                           np.abs(np.amin(self.data_auv['depth'][IND_S:IND_E]))
-self.ind_surface = np.where((self.data_auv['depth'][IND_S:IND_E] <= 0.65) *
-                            (self.data_auv['depth'][IND_S:IND_E] >= 0.35))[0]
+self.ind_surface = np.where((self.data_auv['depth'][IND_S:IND_E] <= 0.55) *
+                            (self.data_auv['depth'][IND_S:IND_E] >= 0.45))[0]
 if len(self.ind_surface):
-    self.ind_surface = self.ind_surface[np.random.randint(0, len(self.ind_surface), 500)]  # select only a few
+    self.ind_surface = self.ind_surface[np.random.randint(0, len(self.ind_surface), 1000)]  # select only a few
     self.lat_surface = self.data_auv['lat'][self.ind_surface]
     self.lon_surface = self.data_auv['lon'][self.ind_surface]
     self.x_surface, self.y_surface = latlon2xy(self.lat_surface, self.lon_surface, 0, 0)
@@ -260,7 +395,7 @@ if len(self.ind_surface):
     self.coordinates = np.hstack((vectorise(self.x_surface), vectorise(self.y_surface)))
 
     V_v = Variogram(coordinates=self.coordinates, values=self.sal_residual.squeeze(), use_nugget=True,
-                    model="Matern",
+                    # model="Matern",
                     normalize=False,
                     n_lags=10)  # model = "Matern" check
 
@@ -293,7 +428,7 @@ if len(self.ind_surface):
     axes[2].xaxis.set_major_formatter(FormatStrFormatter('%.3f'))
     axes[2].set_xlabel("Lon")
     axes[2].set_ylabel("Lat")
-    plt.colorbar(im)
+    # plt.colorbar(im)
 
     axes[3].plot(self.variogram_x, self.variogram_y, 'k-.')
     plt.text(0.5, 0.5, str(V_v), horizontalalignment='center',
@@ -302,7 +437,7 @@ if len(self.ind_surface):
     axes[3].set_ylabel("Sill")
     # axes[3].text(self.variogram_x[-1], self.variogram_y[-1], str(V_v))
     # axes[3].yaxis.set_major_formatter(FormatStrFormatter('%.3f'))
-    plt.tight_layout()
+    # plt.tight_layout()
     plt.show()
 
 
@@ -335,7 +470,7 @@ os.system("open -a \"Google Chrome\" /Users/yaoling/OneDrive\ -\ NTNU/MASCOT_PhD
 
 #%%
 
-
+V_v.plot()
 
 
 

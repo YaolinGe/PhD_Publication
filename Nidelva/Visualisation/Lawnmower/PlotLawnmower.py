@@ -95,8 +95,12 @@ class Lawnmower:
             self.knowledge.step_no = i
             self.knowledge = Sampler(self.knowledge, self.ground_truth, ind_sample).Knowledge
 
-            self.get_excursion_set()
-            ContentPlot(knowledge=self.knowledge, trajectory=self.trajectory, vmin=VMIN, vmax=VMAX, filename="P_{:02d}".format(i), html=False)
+            # self.get_excursion_set()
+            # ContentPlot(knowledge=self.knowledge, trajectory=self.trajectory, vmin=VMIN, vmax=VMAX, filename="P_{:02d}".format(i), html=False)
+
+        self.get_excursion_set()
+        ContentPlot(knowledge=self.knowledge, trajectory=self.trajectory, vmin=VMIN, vmax=VMAX,
+                    filename="lawnmower", html=False)
 
     def get_excursion_set(self):
         self.knowledge.excursion_set = np.zeros_like(self.knowledge.mu)

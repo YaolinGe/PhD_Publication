@@ -174,7 +174,7 @@ class ContentPlot:
             scene_camera=camera,
         )
 
-        # plotly.offline.plot(fig, filename = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Visualisation/Myopic3D/"+self.filename+".html", auto_open = False)
-        # os.system("open -a \"Google Chrome\" /Users/yaoling/OneDrive\ -\ NTNU/MASCOT_PhD/Publication/Nidelva/fig/Visualisation/Myopic3D/"+self.filename+".html")
-        fig.write_image("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Visualisation/Myopic3D/"+self.filename+".png", width=1980, height=1080)
+        plotly.offline.plot(fig, filename = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Visualisation/Myopic3D/"+self.filename+".html", auto_open = False)
+        os.system("open -a \"Google Chrome\" /Users/yaoling/OneDrive\ -\ NTNU/MASCOT_PhD/Publication/Nidelva/fig/Visualisation/Myopic3D/"+self.filename+".html")
+        # fig.write_image("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Visualisation/Myopic3D/"+self.filename+".png", width=1980, height=1080)
 

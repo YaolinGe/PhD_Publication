@@ -87,16 +87,17 @@ class Myopic2D:
         self.knowledge.ind_prev = self.knowledge.ind_now = self.ind_sample = self.ind_start
         self.path_yoyo_ind.append(self.ind_sample)
 
+        filename = "myopic2d"
         for i in range(self.steps):
             print("Steps: ", i)
-            filename = "P_{:02d}".format(i)
+            # filename = "P_{:02d}".format(i)
             self.knowledge = Sampler(self.knowledge, self.ground_truth, self.ind_sample).Knowledge
             lat_next, lon_next, depth_next = MyopicPlanning_2D(knowledge=self.knowledge).next_waypoint
             self.ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next], self.knowledge.coordinates)
             self.path_yoyo_ind.append(self.ind_sample)
             self.knowledge.step_no = i
-            self.get_excursion_set()
-            ContentPlot(knowledge=self.knowledge, yoyo=[], vmin=VMIN, vmax=VMAX, filename=filename, html=False)
+            # self.get_excursion_set()
+            # ContentPlot(knowledge=self.knowledge, yoyo=[], vmin=VMIN, vmax=VMAX, filename=filename, html=False)
 
         self.get_yoyo_2d()
         self.get_excursion_set()

@@ -7,7 +7,7 @@ import time
 
 class SINMOD:
 
-    max_depth_layer = 6 #
+    max_depth_layer = -1 # -1 means all the layers
 
     def __init__(self, sinmod_path):
         sinmod = netCDF4.Dataset(sinmod_path)
