@@ -85,7 +85,7 @@ class MyopicPlanning_3D:
         # print("Filtering takes: ", t2 - t1)
 
     def search_for_new_location(self):
-        ind_next = np.abs(EP_1D(self.knowledge.mu, self.knowledge.Sigma, self.knowledge.threshold_salinity) - .5).argmin()
+        ind_next = np.abs(get_excursion_prob_1d(self.knowledge.mu, self.knowledge.Sigma, self.knowledge.threshold_salinity) - .5).argmin()
         return ind_next
 
     @property

@@ -73,11 +73,17 @@ def EIBV_1D(threshold, mu, Sig, F, R):
     return IntA
 
 
-def EP_1D(mu, Sigma, Threshold):
-    EP = np.zeros_like(mu)
-    for i in range(EP.shape[0]):
-        EP[i] = norm.cdf(Threshold, mu[i], Sigma[i, i])
-    return EP
+def get_excursion_prob_1d(mu, Sigma, threshold):
+    excursion_prob = np.zeros_like(mu)
+    for i in range(excursion_prob.shape[0]):
+        excursion_prob[i] = norm.cdf(threshold, mu[i], Sigma[i, i])
+    return excursion_prob
+
+
+def get_excursion_set(mu, threshold):
+    excursion_set = np.zeros_like(mu)
+    excursion_set[mu < threshold] = True
+    return excursion_set
 
 
 def GPupd(mu_cond, Sigma_cond, F, R, y_sampled):
@@ -135,6 +141,9 @@ def checkfolder(folder):
 
 
 def interpolate_2d(x, y, nx, ny, value, interpolation_method="linear"):
+    '''
+    Use griddata to interpolate to a finer results
+    '''
     xmin, ymin = map(np.amin, [x, y])
     xmax, ymax = map(np.amax, [x, y])
     points = np.hstack((vectorise(x), vectorise(y)))
@@ -145,23 +154,20 @@ def interpolate_2d(x, y, nx, ny, value, interpolation_method="linear"):
     return grid_x, grid_y, grid_value
 
 
-def refill_nan_values(data):
-    mask = np.where(~np.isnan(data))
-    interp = NearestNDInterpolator(np.transpose(mask), data[mask])
-    filled_data = interp(*np.indices(data.shape))
-    return filled_data
-
-
 def interpolate_3d(x, y, z, value):
+    '''
+    Interpolates values for 3d grid by interpolate on 2d layers and combine them together
+    '''
     z_layer = np.unique(z)
     grid = []
     values = []
     nx = 50
     ny = 50
     nz = len(z_layer)
-    for i in range(len(z_layer)):
+    for i in range(nz):
         ind_layer = np.where(z == z_layer[i])[0]
-        grid_x, grid_y, grid_value = interpolate_2d(x[ind_layer], y[ind_layer], nx=nx, ny=ny, value=value[ind_layer], interpolation_method="cubic")
+        grid_x, grid_y, grid_value = interpolate_2d(x[ind_layer], y[ind_layer], nx=nx, ny=ny,
+                                                    value=value[ind_layer], interpolation_method="cubic")
         grid_value = refill_nan_values(grid_value)
         for j in range(grid_x.shape[0]):
             for k in range(grid_x.shape[1]):
@@ -170,8 +176,14 @@ def interpolate_3d(x, y, z, value):
 
     grid = np.array(grid)
     values = np.array(values)
-
     return grid, values
+
+
+def refill_nan_values(data):
+    mask = np.where(~np.isnan(data))
+    interp = NearestNDInterpolator(np.transpose(mask), data[mask])
+    filled_data = interp(*np.indices(data.shape))
+    return filled_data
 
 
 def get_indices_equal2value(array, value):

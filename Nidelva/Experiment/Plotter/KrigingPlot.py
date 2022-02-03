@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
@@ -9,10 +8,6 @@ from Nidelva.Experiment.Data.SINMOD import SINMOD
 from Nidelva.Experiment.Coef.Coef import Coef
 from Nidelva.Experiment.GP_Kernel.Matern_kernel import MaternKernel
 from usr_func import *
-import time, os
-import plotly.graph_objects as go
-import plotly
-from plotly.subplots import make_subplots
 
 
 AUV_DATAPATH = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Data/Nidelva/July06/Adaptive/"
@@ -40,445 +35,393 @@ class KrigingPlot:
         self.gridConfig = GridConfig(PIVOT, ANGLE_ROTATION, NX, NY, NZ, XLIM, YLIM, ZLIM)
         self.gridGenerator = GridGenerator(self.gridConfig)
         self.xyz_grid = self.gridGenerator.xyz
+        self.depth_layers = vectorise(np.unique(self.xyz_grid[:, 2]))
         self.coordinates_grid = self.gridGenerator.coordinates
-        t2 = time.time()
-        print(t2 - t1)
 
-        t1 = time.time()
         self.auvDataIntegrator = AUVDataIntegrator(AUV_DATAPATH, "AdaptiveData")
         self.data_auv = self.auvDataIntegrator.data
         self.sinmod = SINMOD(SINMOD_PATH)
         self.coef = Coef()
         t2 = time.time()
-        print(t2 - t1)
+        print("Setup takes: ", t2 - t1, " seconds")
 
         t1 = time.time()
         self.prepareAUVData()
-        # self.Kriging()
+        self.get_prior()
+        self.Kriging()
         # self.plot()
         t2 = time.time()
         print("Kriging takes ", t2 - t1)
 
-        # self.save_processed_data()
-
         pass
 
     def prepareAUVData(self):
-        # self.ind_mission_start = 850 # user-defined
-        self.ind_mission_start = 760 # user-defined
-        lat_auv_wgs, lon_auv_wgs, depth_auv_wgs = map(vectorise, [self.data_auv["lat"][self.ind_mission_start:],
-                                                                  self.data_auv["lon"][self.ind_mission_start:],
-                                                                  self.data_auv["depth"][self.ind_mission_start:]])
-        x_auv_wgs, y_auv_wgs = latlon2xy(lat_auv_wgs, lon_auv_wgs, self.gridConfig.lat_pivot, self.gridConfig.lon_pivot)
-        RotationalMatrix_WGS2USR = getRotationalMatrix_WGS2USR(self.gridConfig.angle_rotation)
-        self.xyz_auv_wgs = np.hstack((vectorise(x_auv_wgs), vectorise(y_auv_wgs), vectorise(depth_auv_wgs)))
-        self.xyz_auv_usr = (RotationalMatrix_WGS2USR @ self.xyz_auv_wgs.T).T
-        self.coordinates_auv_wgs = np.hstack((lat_auv_wgs, lon_auv_wgs, depth_auv_wgs))
-        self.depth_auv_rounded = vectorise(round2base(depth_auv_wgs, .5))
+        print("Here comes the auv data reorganisation")
+        print("length of dataset: ", len(self.data_auv))
+        datapath_auv = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Experiment/Data/data_auv.csv"
+        if os.path.exists(datapath_auv):
+            print("Dataset exists already, will only load...")
+            t1 = time.time()
+            df = pd.read_csv(datapath_auv)
+            self.coordinates_auv_wgs = df.iloc[:, :3].to_numpy()
+            self.xyz_auv_wgs = df.iloc[:, 3:6].to_numpy()
+            self.xyz_auv_usr = df.iloc[:, 6:9].to_numpy()
+            self.salinity_auv = df.iloc[:, 9].to_numpy()
+            self.mu_sinmod_at_auv_loc = df.iloc[:, 10].to_numpy()
+            self.mu_estimated = df.iloc[:, -1].to_numpy()
+            t2 = time.time()
+            print("Data is loaded successfully!, time consumed>", t2 - t1)
+            pass
+        else:
+            print("Data does not exist, will create new!")
+            # self.ind_mission_start = 850 # user-defined
+            self.ind_mission_start = 760 # user-defined
+            lat_auv_wgs, lon_auv_wgs, depth_auv_wgs, self.salinity_auv = map(vectorise,
+                                                                             [self.data_auv["lat"][self.ind_mission_start:],
+                                                                              self.data_auv["lon"][self.ind_mission_start:],
+                                                                              self.data_auv["depth"][self.ind_mission_start:],
+                                                                              self.data_auv['salinity'][self.ind_mission_start:]])
+            print("GridSize>", lat_auv_wgs.shape)
+            t1 = time.time()
+            x_auv_wgs, y_auv_wgs = latlon2xy(lat_auv_wgs, lon_auv_wgs, self.gridConfig.lat_pivot, self.gridConfig.lon_pivot)
+            RotationalMatrix_WGS2USR = getRotationalMatrix_WGS2USR(self.gridConfig.angle_rotation)
+            self.xyz_auv_wgs = np.hstack((vectorise(x_auv_wgs), vectorise(y_auv_wgs), vectorise(depth_auv_wgs)))
+            self.xyz_auv_usr = (RotationalMatrix_WGS2USR @ self.xyz_auv_wgs.T).T
+            self.coordinates_auv_wgs = np.hstack((lat_auv_wgs, lon_auv_wgs, depth_auv_wgs))
+            self.depth_auv_rounded = vectorise(round2base(depth_auv_wgs, .5))
 
-        self.salinity_auv = vectorise(self.data_auv["salinity"][self.ind_mission_start:])
-        self.mu_sinmod_at_auv_loc = self.sinmod.getSINMODOnCoordinates(self.coordinates_auv_wgs)
+            self.mu_sinmod_at_auv_loc = self.sinmod.getSINMODOnCoordinates(self.coordinates_auv_wgs)
+            t2 = time.time()
+            print("Finished attaching data on auv location, it takes", t2 - t1, " seconds")
 
-        self.depth_layers = vectorise(np.unique(self.xyz_grid[:, 2]))
-        self.DM_depth_auv_rounded = np.abs(self.depth_auv_rounded @ np.ones([1, len(self.depth_layers)]) - np.ones([len(self.depth_auv_rounded), 1]) @ self.depth_layers.T)
-        self.ind_depth_layer = np.argmin(self.DM_depth_auv_rounded, axis = 1)
+            self.DM_depth_auv_rounded = np.abs(self.depth_auv_rounded @ np.ones([1, len(self.depth_layers)]) -
+                                               np.ones([len(self.depth_auv_rounded), 1]) @ self.depth_layers.T)
+            self.ind_depth_layer = np.argmin(self.DM_depth_auv_rounded, axis = 1)
 
-        self.mu_estimated = self.coef.beta0[self.ind_depth_layer, 0].reshape(-1, 1) + \
-                            self.coef.beta1[self.ind_depth_layer, 0].reshape(-1, 1) * self.mu_sinmod_at_auv_loc
+            self.mu_estimated = self.coef.beta0[self.ind_depth_layer, 0].reshape(-1, 1) + \
+                                self.coef.beta1[self.ind_depth_layer, 0].reshape(-1, 1) * self.mu_sinmod_at_auv_loc
+            df = pd.DataFrame(np.hstack((self.coordinates_auv_wgs, self.xyz_auv_wgs, self.xyz_auv_usr,
+                                         self.salinity_auv, self.mu_sinmod_at_auv_loc, self.mu_estimated)),
+                              columns=['lat_wgs', 'lon_wgs', 'depth_wgs', 'x_wgs', 'y_wgs', 'z_wgs',
+                                       'x_usr', 'y_usr', 'z_usr', 'salinity_auv', 'mu_sinmod_at_loc', 'mu_estimated'])
+            df.to_csv(datapath_auv, index=False)
+            print("Finished data saving: time consumed>", t2 - t1, ' seconds')
+
+    def get_prior(self):
+        prior_path = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Experiment/Data/mu_prior.csv"
+        if os.path.exists(prior_path):
+            print("Prior data exists already, will load...")
+            t1 = time.time()
+            df = pd.read_csv(prior_path)
+            self.mu_sinmod = df.iloc[:, 0].to_numpy()
+            self.mu_prior = df.iloc[:, 1].to_numpy()
+            t2 = time.time()
+            print("Prior data is loaded successfully! Time consumed>", t2 - t1)
+            pass
+        else:
+            print("Prior data is not ready, will create one.")
+            t1 = time.time()
+            self.mu_sinmod = self.sinmod.getSINMODOnCoordinates(self.coordinates_grid)
+            self.mu_prior = []
+            for i in range(self.mu_sinmod.shape[0]):
+                ind_depth_layer = np.where(self.coordinates_grid[i, 2] == self.depth_layers)[0]
+                self.mu_prior.append(self.coef.beta0[ind_depth_layer, 0] +
+                                     self.coef.beta1[ind_depth_layer, 0] * self.mu_sinmod[i])
+            self.mu_prior = vectorise(self.mu_prior)
+            df = pd.DataFrame(np.hstack((self.mu_sinmod, self.mu_prior)), columns=['mu_sinmod', 'mu_prior'])
+            df.to_csv(prior_path, index=False)
+            t2 = time.time()
+            print("Finished prior creation, time consumed>", t2 - t1)
+
 
     def Kriging(self):
-        self.mu_sinmod = self.sinmod.getSINMODOnCoordinates(self.coordinates_grid)
-        self.mu_prior = []
-        for i in range(self.mu_sinmod.shape[0]):
-            ind_depth_layer = np.where(self.coordinates_grid[i, 2] == self.depth_layers)[0]
-            self.mu_prior.append(self.coef.beta0[ind_depth_layer, 0] +
-                                 self.coef.beta1[ind_depth_layer, 0] * self.mu_sinmod[i])
-        self.mu_prior = np.array(self.mu_prior)
-        # self.beta0_sinmod = np.kron(np.ones([NX * NY, 1]), self.coef.beta0[:, 0].reshape(-1, 1))
-        # self.beta1_sinmod = np.kron(np.ones([NX * NY, 1]), self.coef.beta1[:, 0].reshape(-1, 1))
-        # self.mu_prior = self.beta0_sinmod + self.beta1_sinmod * self.mu_sinmod
-
+        print("Here comes the kriging...")
+        t1 = time.time()
         # Grid
-        self.Sigma_grid = MaternKernel(self.coordinates_grid, self.coordinates_grid, SILL, RANGE_LATERAL, RANGE_VERTICAL, NUGGET).Sigma
+        self.Sigma_grid = MaternKernel(self.coordinates_grid, self.coordinates_grid, SILL,
+                                       RANGE_LATERAL, RANGE_VERTICAL, NUGGET).Sigma
 
         # Grid-Obs
-        self.Sigma_grid_obs = MaternKernel(self.coordinates_grid, self.coordinates_auv_wgs, SILL, RANGE_LATERAL, RANGE_VERTICAL, NUGGET).Sigma
+        self.Sigma_grid_obs = MaternKernel(self.coordinates_grid, self.coordinates_auv_wgs, SILL,
+                                           RANGE_LATERAL, RANGE_VERTICAL, NUGGET).Sigma
 
         # Obs
-        self.Sigma_obs = MaternKernel(self.coordinates_auv_wgs, self.coordinates_auv_wgs, SILL, RANGE_LATERAL, RANGE_VERTICAL, NUGGET).Sigma
+        self.Sigma_obs = MaternKernel(self.coordinates_auv_wgs, self.coordinates_auv_wgs, SILL,
+                                      RANGE_LATERAL, RANGE_VERTICAL, NUGGET).Sigma + \
+                         NUGGET * np.identity(self.coordinates_auv_wgs.shape[0]) # TODO VERY IMPORTANT
 
         self.mu_posterior = self.mu_prior + self.Sigma_grid_obs @ np.linalg.solve(self.Sigma_obs, (self.salinity_auv - self.mu_estimated))
         self.Sigma_posterior = self.Sigma_grid - self.Sigma_grid_obs @ np.linalg.solve(self.Sigma_obs, self.Sigma_grid_obs.T)
-        self.excursion_prob = EP_1D(self.mu_posterior, self.Sigma_posterior, THRESHOLD_SALINITY)
+
+        self.excursion_set_prior = get_excursion_set(self.mu_prior, THRESHOLD_SALINITY)
+        self.excursion_prob_prior = get_excursion_prob_1d(self.mu_prior, self.Sigma_grid, THRESHOLD_SALINITY)
+        self.boundary_prior = self.get_boundary(self.excursion_prob_prior)
+
+        self.excursion_set_posterior = get_excursion_set(self.mu_posterior, THRESHOLD_SALINITY)
+        self.excursion_prob_posterior = get_excursion_prob_1d(self.mu_posterior, self.Sigma_posterior,
+                                                              THRESHOLD_SALINITY)
+        self.boundary_posterior = self.get_boundary(self.excursion_prob_posterior)
+        t2 = time.time()
+        print("Finished kriging, time consumed>", t2 - t1)
+
+    def get_fake_rectangular_grid(self):
+        lat_grid, lon_grid = xy2latlon(self.xyz_grid[:, 0], self.xyz_grid[:, 1], self.gridConfig.lat_pivot, self.gridConfig.lon_pivot)
+        lat_grid, lon_grid, depth_grid = map(vectorise, [lat_grid, lon_grid, self.xyz_grid[:, 2]])
+        self.coordinates_fake = np.hstack((lat_grid, lon_grid, depth_grid))
+        lat_auv, lon_auv = xy2latlon(self.xyz_auv_usr[:, 0], self.xyz_auv_usr[:, 1], self.gridConfig.lat_pivot, self.gridConfig.lon_pivot)
+        lat_auv, lon_auv, depth_auv = map(vectorise, [lat_auv, lon_auv, self.xyz_auv_usr[:, 2]])
+        self.coordinates_fake_auv = np.hstack((lat_auv, lon_auv, depth_auv))
+        print("Fake coordinates are created successfully!")
+
+    def get_boundary(self, excursion_prob):
+        boundary = np.zeros_like(excursion_prob)
+        # ind_boundary = np.where((excursion_prob >= .475) * (excursion_prob <= .525))[0]
+        ind_boundary = np.where(excursion_prob >= .65)[0]
+        boundary[ind_boundary] = True
+        return boundary
 
     def plot(self):
-        fig = make_subplots(rows=1, cols=3, specs=[[{'type': 'scene'}, {'type': 'scene'}, {'type': 'scene'}]],
-                            subplot_titles=("Prior field", "Posterior field", "Posterior excursion probability"))
+        self.get_fake_rectangular_grid()
+        # == smoothing section
+        lat = self.coordinates_fake[:, 0]
+        lon = self.coordinates_fake[:, 1]
+        depth = self.coordinates_fake[:, 2]
+
+        coordinates_mu_prior, values_mu_prior = interpolate_3d(lon, lat, depth, self.mu_prior)
+        coordinates_ep_prior, values_ep_prior = interpolate_3d(lon, lat, depth, self.excursion_prob_prior)
+        coordinates_es_prior, values_es_prior = interpolate_3d(lon, lat, depth, self.excursion_set_prior)
+        coordinates_boundary_prior, values_boundary_prior = interpolate_3d(lon, lat, depth, self.boundary_prior)
+
+        coordinates_mu_posterior, values_mu_posterior = interpolate_3d(lon, lat, depth, self.mu_posterior)
+        coordinates_ep_posterior, values_ep_posterior = interpolate_3d(lon, lat, depth, self.excursion_prob_posterior)
+        coordinates_es_posterior, values_es_posterior = interpolate_3d(lon, lat, depth, self.excursion_set_posterior)
+        coordinates_boundary_posterior, values_boundary_posterior = interpolate_3d(lon, lat, depth, self.boundary_posterior)
+
+        fig = make_subplots(rows=1, cols=1, specs=[[{'type': 'scene'}]])
+        # fig.add_trace(go.Scatter3d(
+        #     x=self.coordinates_fake[:, 1],
+        #     y=self.coordinates_fake[:, 0],
+        #     z=-self.coordinates_fake[:, 2],
+        #     # value=self.mu_sinmod.flatten(),
+        #
+        #     # isomin=0,
+        #     # isomax=30,
+        #     # opacity=.1,
+        #     # surface_count=30,
+        #     mode='markers',
+        #         marker=dict(
+        #             size=5,
+        #             color=self.mu_posterior.flatten(),
+        #             colorscale="brbg",
+        #             showscale=True,
+        #
+        #         ),
+        #     # colorscale="brbg",
+        #     # caps=dict(x_show=False, y_show=False, z_show=False),
+        # ),
+        #     row=1, col=1
+        # )
+
+        posterior = True
+
+        # == posterior ==
+        if posterior:
+            coordinates_mean = coordinates_mu_posterior
+            values_mean = values_mu_posterior
+
+            coordinates_es = coordinates_es_posterior
+            values_es = values_es_posterior
+
+            coordinates_ep = coordinates_ep_posterior
+            values_ep = values_ep_posterior
+
+            coordinates_b = coordinates_boundary_posterior
+            values_b = values_boundary_posterior
+
+        else:
+            coordinates_mean = coordinates_mu_prior
+            values_mean = values_mu_prior
+
+            coordinates_es = coordinates_es_prior
+            values_es = values_es_prior
+
+            coordinates_ep = coordinates_ep_prior
+            values_ep = values_ep_prior
+
+            coordinates_b = coordinates_boundary_prior
+            values_b = values_boundary_prior
+
         fig.add_trace(go.Volume(
-            x=self.xyz_grid[:, 1],
-            y=self.xyz_grid[:, 0],
-            z=-self.xyz_grid[:, 2],
-            value=self.mu_prior.flatten(),
-            isomin=0,
-            isomax=28,
+            x=coordinates_mean[:, 0],
+            y=coordinates_mean[:, 1],
+            z=-coordinates_mean[:, 2],
+            value=values_mean.flatten(),
+            isomin=16,
+            isomax=30,
             opacity=.1,
             surface_count=30,
-            colorscale="BrBG",
-            # coloraxis="coloraxis1",
-            colorbar=dict(x=0.3, y=0.5, len=.5),
-            # reversescale=True,
+            coloraxis="coloraxis",
             caps=dict(x_show=False, y_show=False, z_show=False),
         ),
             row=1, col=1
         )
 
+        # zv = coordinates_ep[:, 2]
+        # for j in range(len(np.unique(zv))):
+        #     ind = (zv == np.unique(zv)[j])
+        #     fig.add_trace(
+        #         go.Isosurface(x=coordinates_ep[ind, 0],
+        #                       y=coordinates_ep[ind, 1],
+        #                       z=-zv[ind],
+        #                       opacity=.3,
+        #                       # value=mu_cond[ind], colorscale=newcmp),
+        #                       value=values_ep[ind], coloraxis="coloraxis"),
+        #         row=1, col=1
+        #     )
+
+        # fig.add_trace(go.Volume(
+        #     x=coordinates_ep[:, 0],
+        #     y=coordinates_ep[:, 1],
+        #     z=-coordinates_ep[:, 2],
+        #     value=values_ep.flatten(),
+        #     isomin=0,
+        #     isomax=1,
+        #     opacity=.05,
+        #     surface_count=15,
+        #     coloraxis="coloraxis",
+        #     caps=dict(x_show=False, y_show=False, z_show=False),
+        # ),
+        #     row=1, col=1
+        # )
         fig.add_trace(go.Volume(
-            x=self.xyz_grid[:, 1],
-            y=self.xyz_grid[:, 0],
-            z=-self.xyz_grid[:, 2],
-            value=self.mu_posterior.flatten(),
-            isomin=0,
-            isomax=28,
-            opacity=.1,
-            surface_count=30,
-            colorscale="BrBG",
-            # coloraxis="coloraxis1",
-            colorbar=dict(x=0.65, y=0.5, len=.5),
-            # reversescale=True,
+            x=coordinates_ep[:, 0],
+            y=coordinates_ep[:, 1],
+            z=-coordinates_ep[:, 2],
+            value=values_ep.flatten(),
+            isomin=.75,
+            isomax=1,
+            opacity=.7,
+            surface_count=1,
+            # colorscale="Peach",
+            colorscale="turbid",
+            showscale=False,
             caps=dict(x_show=False, y_show=False, z_show=False),
         ),
-            row=1, col=2
+            row=1, col=1
         )
 
-        fig.add_trace(go.Volume(
-            x=self.xyz_grid[:, 1],
-            y=self.xyz_grid[:, 0],
-            z=-self.xyz_grid[:, 2],
-            value=self.excursion_prob.flatten(),
-            isomin=0,
-            isomax=1,
-            opacity=.1,
-            surface_count=30,
-            colorscale="gnbu",
-            # coloraxis="coloraxis1",
-            colorbar=dict(x=1, y=0.5, len=.5),
-            # reversescale=True,
-            caps=dict(x_show=False, y_show=False, z_show=False),
-        ),
-            row=1, col=3
-        )
-        fig.add_trace(go.Scatter3d(
-            # print(trajectory),
-            x=self.xyz_auv_usr[:, 1],
-            y=self.xyz_auv_usr[:, 0],
-            z=-self.xyz_auv_usr[:, 2],
-            mode='markers+lines',
-            marker=dict(
-                size=5,
-                color="black",
-                showscale=False,
+        if posterior:
+            fig.add_trace(go.Scatter3d(
+                x=self.coordinates_fake_auv[:, 1],
+                y=self.coordinates_fake_auv[:, 0],
+                z=-self.coordinates_fake_auv[:, 2],
+                # mode='markers+lines',
+                mode='lines',
+                line=dict(
+                    color="black",
+                    width=5,
+                    showscale=False,
+                ),
+                showlegend=False,
             ),
-            line=dict(
-                color="yellow",
-                width=3,
-                showscale=False,
-            ),
-            showlegend=False,
-        ),
-            row='all', col='all'
-        )
+                row='all', col='all'
+            )
 
         camera = dict(
             up=dict(x=0, y=0, z=1),
             center=dict(x=0, y=0, z=0),
-            eye=dict(x=2.25, y=2.25, z=2.25)
+            eye=dict(x=-1.25, y=-1.25, z=1)
         )
+        fig.update_coloraxes(colorscale="BrBG", colorbar=dict(lenmode='fraction', len=.5, thickness=20,
+                                                                tickfont=dict(size=18, family="Times New Roman"),
+                                                                title="Salinity",
+                                                                titlefont=dict(size=18, family="Times New Roman")))
+        fig.update_layout(coloraxis_colorbar_x=0.75)
 
         fig.update_layout(
+            title={
+                'text': "Prior field after assilimating SINMOD and pre-survey data",
+                'y': 0.75,
+                'x': 0.5,
+                'xanchor': 'center',
+                'yanchor': 'top',
+                'font': dict(size=30, family="Times New Roman"),
+            },
             scene=dict(
-                xaxis=dict(showticklabels=False),
-                yaxis=dict(showticklabels=False),
-                zaxis=dict(nticks=4, range=[-2, 0], showticklabels=False),
-                xaxis_title='Lon [deg]',
-                yaxis_title='Lat [deg]',
-                zaxis_title='Depth [m]',
+                zaxis=dict(nticks=4, range=[-3, 0], ),
+                xaxis_tickfont=dict(size=14, family="Times New Roman"),
+                yaxis_tickfont=dict(size=14, family="Times New Roman"),
+                zaxis_tickfont=dict(size=14, family="Times New Roman"),
+                xaxis_title=dict(text="Longitude", font=dict(size=18, family="Times New Roman")),
+                yaxis_title=dict(text="Latitude", font=dict(size=18, family="Times New Roman")),
+                zaxis_title=dict(text="Depth [m]", font=dict(size=18, family="Times New Roman")),
             ),
             scene_aspectmode='manual',
-            scene_aspectratio=dict(x=1, y=1, z=.5),
-            scene2=dict(
-                xaxis=dict(showticklabels=False),
-                yaxis=dict(showticklabels=False),
-                zaxis=dict(nticks=4, range=[-2, 0], showticklabels=False),
-                xaxis_title='Lon [deg]',
-                yaxis_title='Lat [deg]',
-                zaxis_title='Depth [m]',
-            ),
-            scene2_aspectmode='manual',
-            scene2_aspectratio=dict(x=1, y=1, z=.5),
-            scene3=dict(
-                xaxis=dict(showticklabels=False),
-                yaxis=dict(showticklabels=False),
-                zaxis=dict(nticks=4, range=[-2, 0], showticklabels=False),
-                xaxis_title='Lon [deg]',
-                yaxis_title='Lat [deg]',
-                zaxis_title='Depth [m]',
-            ),
-            scene3_aspectmode='manual',
-            scene3_aspectratio=dict(x=1, y=1, z=.5),
+            scene_aspectratio=dict(x=1, y=1, z=.25),
             scene_camera=camera,
-            scene2_camera=camera,
-            scene3_camera=camera,
         )
-        plotly.offline.plot(fig,
-                            filename="/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Experiment/Field_posterior.html",
-                            auto_open=False)
-        os.system(
-            "open -a \"Google Chrome\" /Users/yaoling/OneDrive\ -\ NTNU/MASCOT_PhD/Publication/Nidelva/fig/Experiment//Field_posterior.html")
-
+        if posterior:
+            filename = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Experiment/Field_posterior.html"
+            filepath = "/Users/yaoling/OneDrive\ -\ NTNU/MASCOT_PhD/Publication/Nidelva/fig/Experiment/Field_posterior.html"
+        else:
+            filename = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Experiment/Field_prior.html"
+            filepath = "/Users/yaoling/OneDrive\ -\ NTNU/MASCOT_PhD/Publication/Nidelva/fig/Experiment/Field_prior.html"
+        plotly.offline.plot(fig, filename=filename, auto_open=False)
+        os.system("open -a \"Google Chrome\" "+filepath)
         pass
 
-    def save_processed_data(self):
+    def save_processed_data_slices(self):
         self.pred_err = vectorise(np.sqrt(np.diag(self.Sigma_posterior)))
-        self.dataframe_field = pd.DataFrame(np.hstack((self.coordinates_grid, self.mu_sinmod, self.mu_prior,
-                                                       self.mu_posterior, self.excursion_prob, self.pred_err)),
-                                            columns=["lat", "lon", "depth", "mean_sinmod", "mean_prior",
-                                                     "mean_posterior",
-                                                     "excursion_prob", "prediction_error"])
-        self.dataframe_field.to_csv(
-            "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Experiment/Data/field_data.csv")
+        for i in range(len(self.depth_layers)):
+            ind_depth_layer = np.where(self.coordinates_grid[:, 2] == self.depth_layers[i])[0]
 
-        self.dataframe_auv = pd.DataFrame(
-            np.hstack((self.coordinates_auv_wgs, self.mu_sinmod_at_auv_loc, self.mu_estimated)),
-            columns=["lat", "lon", "depth", "mean_sinmod_at_auv_loc", "mean_estimated"])
-        self.dataframe_auv.to_csv(
-            "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Experiment/Data/auv_data.csv")
-        print("Data is saved successfully!")
+            self.dataframe_field = pd.DataFrame(np.hstack((self.coordinates_grid[ind_depth_layer, :],
+                                                           self.mu_sinmod[ind_depth_layer,].reshape(-1, 1),
+                                                           self.mu_prior[ind_depth_layer, :].reshape(-1, 1),
+                                                           self.mu_posterior[ind_depth_layer, :].reshape(-1, 1),
+                                                           self.excursion_prob_prior[ind_depth_layer, :].reshape(-1, 1),
+                                                           self.excursion_prob_posterior[ind_depth_layer, :].reshape(-1, 1),
+                                                           self.excursion_set_prior[ind_depth_layer, :].reshape(-1, 1),
+                                                           self.excursion_set_posterior[ind_depth_layer, :].reshape(-1, 1),
+                                                           self.pred_err[ind_depth_layer, :].reshape(-1, 1))),
+                                                columns=["lat", "lon", "depth", "mu_sinmod", "mu_prior", "mu_posterior",
+                                                         "excursion_prob_prior", "excursion_prob_posterior",
+                                                         "excursion_set_prior", "excursion_set_posterior",
+                                                         "prediction_error"])
+            datapath_layer = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Experiment/Data/field_data_{:d}.csv".format(i)
+            self.dataframe_field.to_csv(datapath_layer, index=False)
+            print("Data is saved successfully!")
+
         pass
 
 a = KrigingPlot()
-# a.prepareAUVData()
-a.Kriging()
-#%%
-
 a.plot()
-#%%
-ind_surface = np.where(a.xyz_grid[:, 2] == 0.5)[0]
-plt.scatter(a.xyz_grid[ind_surface, 0], a.xyz_grid[ind_surface, 1], c = a.mu_posterior[ind_surface], cmap ="Paired", vmin = 10, vmax = 30)
-
-plt.colorbar()
-plt.show()
-#%%
-a.prepareAUVData()
-a.Kriging()
-#%%
-plt.plot(a.mu_posterior)
-plt.plot(mu_cond)
-plt.show()
-#%%
-
-plt.plot(a.mu_estimated)
-plt.plot(mu_sal_est)
-plt.show()
-
-
 
 #%%
-
-
-def plot(self):
-    fig = make_subplots(rows=1, cols=3, specs=[[{'type': 'scene'}, {'type': 'scene'}, {'type': 'scene'}]],
-                        subplot_titles=("Prior field", "Posterior field", "Posterior excursion probability"))
-    fig.add_trace(go.Volume(
-        x=self.xyz_grid[:, 1],
-        y=self.xyz_grid[:, 0],
-        z=-self.xyz_grid[:, 2],
-        value=self.mu_prior.flatten(),
-        isomin=0,
-        isomax=28,
-        opacity=.1,
-        surface_count=30,
-        colorscale="BrBG",
-        # coloraxis="coloraxis1",
-        colorbar=dict(x=0.3, y=0.5, len=.5),
-        # reversescale=True,
-        caps=dict(x_show=False, y_show=False, z_show=False),
-    ),
-        row=1, col=1
-    )
-
-    fig.add_trace(go.Volume(
-        x=self.xyz_grid[:, 1],
-        y=self.xyz_grid[:, 0],
-        z=-self.xyz_grid[:, 2],
-        value=self.mu_posterior.flatten(),
-        isomin=0,
-        isomax=28,
-        opacity=.1,
-        surface_count=30,
-        colorscale="BrBG",
-        # coloraxis="coloraxis1",
-        colorbar=dict(x=0.65, y=0.5, len=.5),
-        # reversescale=True,
-        caps=dict(x_show=False, y_show=False, z_show=False),
-    ),
-        row=1, col=2
-    )
-
-    fig.add_trace(go.Volume(
-        x=self.xyz_grid[:, 1],
-        y=self.xyz_grid[:, 0],
-        z=-self.xyz_grid[:, 2],
-        value=self.excursion_prob.flatten(),
-        isomin=0,
-        isomax=1,
-        opacity=.1,
-        surface_count=30,
-        colorscale="gnbu",
-        # coloraxis="coloraxis1",
-        colorbar=dict(x=1, y=0.5, len=.5),
-        # reversescale=True,
-        caps=dict(x_show=False, y_show=False, z_show=False),
-    ),
-        row=1, col=3
-    )
-    fig.add_trace(go.Scatter3d(
-        # print(trajectory),
-        x=self.xyz_auv_usr[:, 1],
-        y=self.xyz_auv_usr[:, 0],
-        z=-self.xyz_auv_usr[:, 2],
-        mode='markers+lines',
-        marker=dict(
-            size=5,
-            color="black",
-            showscale=False,
-        ),
-        line=dict(
-            color="yellow",
-            width=3,
-            showscale=False,
-        ),
-        showlegend=False,
-    ),
-        row='all', col='all'
-    )
-
-    camera = dict(
-        up=dict(x=0, y=0, z=1),
-        center=dict(x=0, y=0, z=0),
-        eye=dict(x=2.25, y=2.25, z=2.25)
-    )
-
-    fig.update_layout(
-        scene=dict(
-            xaxis=dict(showticklabels=False),
-            yaxis=dict(showticklabels=False),
-            zaxis=dict(nticks=4, range=[-2, 0], showticklabels=False),
-            xaxis_title='Lon [deg]',
-            yaxis_title='Lat [deg]',
-            zaxis_title='Depth [m]',
-        ),
-        scene_aspectmode='manual',
-        scene_aspectratio=dict(x=1, y=1, z=.5),
-        scene2=dict(
-            xaxis=dict(showticklabels=False),
-            yaxis=dict(showticklabels=False),
-            zaxis=dict(nticks=4, range=[-2, 0], showticklabels=False),
-            xaxis_title='Lon [deg]',
-            yaxis_title='Lat [deg]',
-            zaxis_title='Depth [m]',
-        ),
-        scene2_aspectmode='manual',
-        scene2_aspectratio=dict(x=1, y=1, z=.5),
-        scene3=dict(
-            xaxis=dict(showticklabels=False),
-            yaxis=dict(showticklabels=False),
-            zaxis=dict(nticks=4, range=[-2, 0], showticklabels=False),
-            xaxis_title='Lon [deg]',
-            yaxis_title='Lat [deg]',
-            zaxis_title='Depth [m]',
-        ),
-        scene3_aspectmode='manual',
-        scene3_aspectratio=dict(x=1, y=1, z=.5),
-        scene_camera=camera,
-        scene2_camera=camera,
-        scene3_camera=camera,
-    )
-    plotly.offline.plot(fig,
-                        filename="/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Experiment/Field_posterior.html",
-                        auto_open=False)
-    os.system(
-        "open -a \"Google Chrome\" /Users/yaoling/OneDrive\ -\ NTNU/MASCOT_PhD/Publication/Nidelva/fig/Experiment//Field_posterior.html")
-
-    pass
-
-plot(a)
-
-#%%
-
 def save_processed_data_slices(self):
     self.pred_err = vectorise(np.sqrt(np.diag(self.Sigma_posterior)))
     for i in range(len(self.depth_layers)):
-        ind_depth_layer = np.where(self.grid_wgs84[:, 2] == self.depth_layers[i])[0]
+        ind_depth_layer = np.where(self.coordinates_grid[:, 2] == self.depth_layers[i])[0]
 
+        self.dataframe_field = pd.DataFrame(np.hstack((self.coordinates_grid[ind_depth_layer, :],
+                                                       self.mu_sinmod[ind_depth_layer].reshape(-1, 1),
+                                                       self.mu_prior[ind_depth_layer].reshape(-1, 1),
+                                                       self.mu_posterior[ind_depth_layer].reshape(-1, 1),
+                                                       self.excursion_prob_prior[ind_depth_layer].reshape(-1, 1),
+                                                       self.excursion_prob_posterior[ind_depth_layer].reshape(-1, 1),
+                                                       self.excursion_set_prior[ind_depth_layer].reshape(-1, 1),
+                                                       self.excursion_set_posterior[ind_depth_layer].reshape(-1, 1),
+                                                       self.pred_err[ind_depth_layer].reshape(-1, 1))),
+                                            columns=["lat", "lon", "depth", "mu_sinmod", "mu_prior", "mu_posterior",
+                                                     "excursion_prob_prior", "excursion_prob_posterior",
+                                                     "excursion_set_prior", "excursion_set_posterior",
+                                                     "prediction_error"])
+        datapath_layer = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Experiment/Data/field_data_{:d}.csv".format(
+            i)
+        self.dataframe_field.to_csv(datapath_layer, index=False)
+        print("Data is saved successfully!")
 
-        self.dataframe_field = pd.DataFrame(np.hstack((self.grid_wgs84[ind_depth_layer, :],
-                                                       self.mu_sinmod[ind_depth_layer, :].reshape(-1, 1),
-                                                       self.mu_prior[ind_depth_layer, :].reshape(-1, 1),
-                                                       self.mu_posterior[ind_depth_layer, :].reshape(-1, 1),
-                                                       self.excursion_prob[ind_depth_layer, :].reshape(-1, 1),
-                                                       self.pred_err[ind_depth_layer, :].reshape(-1, 1))),
-                                        columns=["lat", "lon", "depth", "mean_sinmod", "mean_prior",
-                                                 "mean_posterior",
-                                                 "excursion_prob", "prediction_error"])
-
-        self.dataframe_field.to_csv("/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Experiment/Data/field_data_{:d}.csv".format(i), index=False)
-
-    self.dataframe_auv = pd.DataFrame(
-        np.hstack((self.coordinates_auv_wgs, self.mu_sinmod_at_auv_loc, self.mu_estimated)),
-        columns=["lat", "lon", "depth", "mean_sinmod_at_auv_loc", "mean_estimated"])
-    self.dataframe_auv.to_csv(
-        "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Experiment/Data/auv_data.csv", index=False)
-    print("Data is saved successfully!")
     pass
 
-self = a
-save_processed_data_slices(self)
-
-#%%
-path = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Experiment/Data/field_data_0.csv"
-data_surface = pd.read_csv(path)
-data_surface["excursion_set"] = np.ones_like(data_surface["mean_posterior"])
-data_surface["excursion_set"][data_surface["mean_posterior"] > 28] = 0
-
-grid_x, grid_y, grid_value = interpolate_2d(data_surface["lon"], data_surface["lat"], 200, 200, data_surface["excursion_prob"])
-
-plt.scatter(grid_x, grid_y, c=grid_value, vmin=0, vmax=1)
-# plt.scatter(data_surface["lon"], data_surface["lat"], c=data_surface["excursion_prob"], s=90, vmin = 0, vmax = 1)
-# plt.hexbin(data_surface["lon"], data_surface["lat"], C=data_surface["excursion_prob"], gridsize=20)
-# plt.pcolor([data_surface["lon"], data_surface["lat"], ], data_surface["excursion_prob"])
-plt.colorbar()
-plt.show()
-# import seaborn as sns
-#
-#
-# sns.distplot(data_surface, x="lon", y="lat", kind="kde")
-# plt.show()
-
-from matplotlib.gridspec import GridSpec
-
-#%%
-fig = plt.figure(figsize=(60, 10))
-gs = GridSpec(nrows=1, ncols=5)
-for i in range(5):
-    ax = fig.add_subplot(gs[i])
-    path = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Experiment/Data/field_data_{:d}.csv".format(i)
-    data = pd.read_csv(path)
-    grid_x, grid_y, grid_value = interpolate_2d(data["lon"], data["lat"], 200, 200, data["excursion_prob"])
-    im = ax.scatter(grid_x, grid_y, c=grid_value, vmin=0, vmax=1, cmap="GnBu")
-    plt.colorbar(im)
-    ax.set_xlabel('Lon [deg]')
-    ax.set_ylabel("Lat [deg]")
-    ax.set_title("Depth {:f}m".format(self.depth_layers[i, 0]))
-
-plt.show()
+save_processed_data_slices(a)
 

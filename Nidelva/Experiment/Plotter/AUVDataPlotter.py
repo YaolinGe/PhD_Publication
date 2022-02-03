@@ -211,7 +211,7 @@ for i in [len(xauv_new_truncated)]:
     mu_cond = mu_cond + Sigma_grid_obs @ np.linalg.solve(Sigma_obs, (sal_auv[:i + 1] - mu_sal_est))
     Sigma_cond = Sigma_cond - Sigma_grid_obs @ np.linalg.solve(Sigma_obs, Sigma_grid_obs.T)
     perr = np.diag(Sigma_cond).reshape(-1, 1)
-    EP = EP_1D(mu_cond, Sigma_cond, Threshold)
+    EP = get_excursion_prob_1d(mu_cond, Sigma_cond, Threshold)
     ##
     fig = make_subplots(rows=1, cols=1, specs=[[{'type': 'scene'}]])
 

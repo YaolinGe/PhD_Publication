@@ -86,11 +86,11 @@ class Simulator:
         foldername = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Simulation/Replicates/R_{:03d}/".format(self.seed)
         checkfolder(foldername)
         self.knowledge_prior = self.knowledge
-        self.knowledge_prior.excursion_prob = EP_1D(self.knowledge_prior.mu, self.knowledge_prior.Sigma, self.knowledge_prior.threshold_salinity)
+        self.knowledge_prior.excursion_prob = get_excursion_prob_1d(self.knowledge_prior.mu, self.knowledge_prior.Sigma, self.knowledge_prior.threshold_salinity)
         KnowledgePlot(knowledge=self.knowledge_prior, vmin=VMIN, vmax=VMAX, filename=foldername+"Field_prior", html=False)
         self.knowledge_ground_truth = self.knowledge
         self.knowledge_ground_truth.mu = self.ground_truth
-        self.knowledge_ground_truth.excursion_prob = EP_1D(self.knowledge_ground_truth.mu, self.knowledge_ground_truth.Sigma, self.knowledge_ground_truth.threshold_salinity)
+        self.knowledge_ground_truth.excursion_prob = get_excursion_prob_1d(self.knowledge_ground_truth.mu, self.knowledge_ground_truth.Sigma, self.knowledge_ground_truth.threshold_salinity)
         KnowledgePlot(knowledge=self.knowledge_ground_truth, vmin=VMIN, vmax=VMAX, filename=foldername+"Field_ground_truth", html=False)
 
     def run_2d(self):

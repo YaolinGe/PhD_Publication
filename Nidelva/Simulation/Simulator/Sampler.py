@@ -26,7 +26,7 @@ class Sampler:
         self.knowledge.mu, self.knowledge.Sigma = \
             GPupd(mu_cond=self.knowledge.mu, Sigma_cond=self.knowledge.Sigma, F=F,
                   R=self.knowledge.kernel.R, y_sampled=self.ground_truth[self.ind_sample])
-        self.knowledge.excursion_prob = EP_1D(self.knowledge.mu, self.knowledge.Sigma, self.knowledge.threshold_salinity)
+        self.knowledge.excursion_prob = get_excursion_prob_1d(self.knowledge.mu, self.knowledge.Sigma, self.knowledge.threshold_salinity)
         self.knowledge.trajectory.append([self.knowledge.coordinates[self.knowledge.ind_now, 0],
                                           self.knowledge.coordinates[self.knowledge.ind_now, 1],
                                           self.knowledge.coordinates[self.knowledge.ind_now, 2]])

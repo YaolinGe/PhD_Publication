@@ -7,7 +7,7 @@ import time
 
 class SINMOD:
 
-    max_depth_layer = -1 # -1 means all the layers
+    max_depth_layer = 6 # -1 means all the layers
 
     def __init__(self, sinmod_path):
         sinmod = netCDF4.Dataset(sinmod_path)
@@ -16,18 +16,11 @@ class SINMOD:
         self.depth_sinmod = np.array(sinmod['zc'][:self.max_depth_layer])
         self.lat_sinmod = np.array(sinmod['gridLats'][:, :])
         self.lon_sinmod = np.array(sinmod['gridLons'][:, :])
-        self.rearrangeSINMOD()
+        print("Only ", self.max_depth_layer, " layers is selected")
         pass
 
-    def rearrangeSINMOD(self):
-        self.sinmod_coordinates = []
-        for i in range(self.lat_sinmod.shape[0]):
-            for j in range(self.lon_sinmod.shape[1]):
-                for k in range(len(self.depth_sinmod)):
-                    self.sinmod_coordinates.append([self.lat_sinmod[i, j], self.lon_sinmod[i, j], self.depth_sinmod[k], self.salinity_sinmod[k, i, j]])
-        self.sinmod_coordinates = np.array(self.sinmod_coordinates)
-
     def getSINMODOnCoordinates(self, coordinates):
+        self.rearrangeSINMOD()
         self.lat_coordinates = coordinates[:, 0]
         self.lon_coordinates = coordinates[:, 1]
         self.depth_coordinates = coordinates[:, 2]
@@ -49,8 +42,13 @@ class SINMOD:
         self.salinity_interpolated = vectorise(self.sinmod_coordinates[self.ind_interpolated, 3])
         return self.salinity_interpolated
 
-
-
+    def rearrangeSINMOD(self):
+        self.sinmod_coordinates = []
+        for i in range(self.lat_sinmod.shape[0]):
+            for j in range(self.lon_sinmod.shape[1]):
+                for k in range(len(self.depth_sinmod)):
+                    self.sinmod_coordinates.append([self.lat_sinmod[i, j], self.lon_sinmod[i, j], self.depth_sinmod[k], self.salinity_sinmod[k, i, j]])
+        self.sinmod_coordinates = np.array(self.sinmod_coordinates)
 
 
 
