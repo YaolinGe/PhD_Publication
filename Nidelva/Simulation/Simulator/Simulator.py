@@ -104,7 +104,7 @@ class Simulator:
             # print("Step No. ", i)
             self.knowledge = Sampler(self.knowledge, self.ground_truth, self.ind_sample).Knowledge
             lat_next, lon_next, depth_next = MyopicPlanning_2D(knowledge=self.knowledge).next_waypoint
-            self.ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next], self.knowledge.coordinates)
+            self.ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next], self.knowledge.xyz_wgs)
             self.knowledge.step_no = i
         KnowledgePlot(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX, filename=foldername + "Field_{:03d}".format(i),
                       html=False)
@@ -120,7 +120,7 @@ class Simulator:
             # print("Step No. ", i)
             self.knowledge = Sampler(self.knowledge, self.ground_truth, self.ind_sample).Knowledge
             lat_next, lon_next, depth_next = MyopicPlanning_3D(knowledge=self.knowledge).next_waypoint
-            self.ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next],self.knowledge.coordinates)
+            self.ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next], self.knowledge.xyz_wgs)
             self.knowledge.step_no = i
             # KnowledgePlot(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX,
             #               filename=foldername + "Field_{:03d}".format(i), html=False)
@@ -137,7 +137,7 @@ class Simulator:
         for i in range(self.steps):
             # print("Step No. ", i)
             lat_next, lon_next, depth_next = self.lawn_mower_path_3d[self.starting_index + i, :]
-            ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next], self.knowledge.coordinates)
+            ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next], self.knowledge.xyz_wgs)
 
             self.knowledge.step_no = i
             self.knowledge = Sampler(self.knowledge, self.ground_truth, ind_sample).Knowledge

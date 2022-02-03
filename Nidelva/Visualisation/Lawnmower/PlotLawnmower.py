@@ -90,7 +90,7 @@ class Lawnmower:
             print("Step No. ", i)
             lat_next, lon_next, depth_next = self.lawn_mower_path_3d[self.starting_index + i, :]
             self.trajectory.append([lat_next, lon_next, depth_next])
-            ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next], self.knowledge.coordinates)
+            ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next], self.knowledge.xyz_wgs)
 
             self.knowledge.step_no = i
             self.knowledge = Sampler(self.knowledge, self.ground_truth, ind_sample).Knowledge

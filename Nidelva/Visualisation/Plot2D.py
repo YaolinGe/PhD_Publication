@@ -19,7 +19,7 @@ class Plot2D:
         if knowledge is None:
             raise ValueError("")
         self.knowledge = knowledge
-        self.coordinates = self.knowledge.coordinates
+        self.coordinates = self.knowledge.xyz_wgs
         self.vmin = vmin
         self.vmax = vmax
         self.filename = filename

@@ -18,7 +18,7 @@ class ContentPlot:
         if knowledge is None:
             raise ValueError("")
         self.knowledge = knowledge
-        self.coordinates = self.knowledge.coordinates
+        self.coordinates = self.knowledge.xyz_wgs
         self.vmin = vmin
         self.vmax = vmax
         self.filename = filename
@@ -34,9 +34,9 @@ class ContentPlot:
         points_mean, values_mean = interpolate_3d(lon, lat, depth, self.knowledge.mu)
         points_es, values_es = interpolate_3d(lon, lat, depth, self.knowledge.excursion_set)
         trajectory = np.array(self.knowledge.trajectory)
-        trajectory = np.append(trajectory, np.array([[self.knowledge.coordinates[self.knowledge.ind_now, 0],
-                                                      self.knowledge.coordinates[self.knowledge.ind_now, 1],
-                                                      self.knowledge.coordinates[self.knowledge.ind_now, 2]]]).reshape(1, -1), axis=0)
+        trajectory = np.append(trajectory, np.array([[self.knowledge.xyz_wgs[self.knowledge.ind_now, 0],
+                                                      self.knowledge.xyz_wgs[self.knowledge.ind_now, 1],
+                                                      self.knowledge.xyz_wgs[self.knowledge.ind_now, 2]]]).reshape(1, -1), axis=0)
 
         fig = make_subplots(rows = 1, cols = 1, specs = [[{'type': 'scene'}]])
         fig.add_trace(go.Volume(
@@ -72,9 +72,9 @@ class ContentPlot:
 
         if len(self.knowledge.ind_cand):
             fig.add_trace(go.Scatter3d(
-                x=self.knowledge.coordinates[self.knowledge.ind_cand, 1],
-                y=self.knowledge.coordinates[self.knowledge.ind_cand, 0],
-                z=-self.knowledge.coordinates[self.knowledge.ind_cand, 2],
+                x=self.knowledge.xyz_wgs[self.knowledge.ind_cand, 1],
+                y=self.knowledge.xyz_wgs[self.knowledge.ind_cand, 0],
+                z=-self.knowledge.xyz_wgs[self.knowledge.ind_cand, 2],
                 mode='markers',
                 marker=dict(
                     size=15,
@@ -88,9 +88,9 @@ class ContentPlot:
 
         if len(self.knowledge.ind_cand_filtered):
             fig.add_trace(go.Scatter3d(
-                x=self.knowledge.coordinates[self.knowledge.ind_cand_filtered, 1],
-                y=self.knowledge.coordinates[self.knowledge.ind_cand_filtered, 0],
-                z=-self.knowledge.coordinates[self.knowledge.ind_cand_filtered, 2],
+                x=self.knowledge.xyz_wgs[self.knowledge.ind_cand_filtered, 1],
+                y=self.knowledge.xyz_wgs[self.knowledge.ind_cand_filtered, 0],
+                z=-self.knowledge.xyz_wgs[self.knowledge.ind_cand_filtered, 2],
                 mode='markers',
                 marker=dict(
                     size=10,
@@ -125,9 +125,9 @@ class ContentPlot:
             )
 
         fig.add_trace(go.Scatter3d(
-            x=[self.knowledge.coordinates[self.knowledge.ind_now, 1]],
-            y=[self.knowledge.coordinates[self.knowledge.ind_now, 0]],
-            z=[-self.knowledge.coordinates[self.knowledge.ind_now, 2]],
+            x=[self.knowledge.xyz_wgs[self.knowledge.ind_now, 1]],
+            y=[self.knowledge.xyz_wgs[self.knowledge.ind_now, 0]],
+            z=[-self.knowledge.xyz_wgs[self.knowledge.ind_now, 2]],
             mode='markers',
             marker=dict(
                 size=20,

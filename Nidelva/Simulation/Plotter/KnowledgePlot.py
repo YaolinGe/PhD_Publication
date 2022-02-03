@@ -27,7 +27,7 @@ class KnowledgePlot:
         if knowledge is None:
             raise ValueError("")
         self.knowledge = knowledge
-        self.coordinates = self.knowledge.coordinates
+        self.coordinates = self.knowledge.xyz_wgs
         self.vmin = vmin
         self.vmax = vmax
         self.filename = filename
@@ -107,9 +107,9 @@ class KnowledgePlot:
 
         if len(self.knowledge.ind_cand):
             fig.add_trace(go.Scatter3d(
-                x=self.knowledge.coordinates[self.knowledge.ind_cand, 1],
-                y=self.knowledge.coordinates[self.knowledge.ind_cand, 0],
-                z=-self.knowledge.coordinates[self.knowledge.ind_cand, 2],
+                x=self.knowledge.xyz_wgs[self.knowledge.ind_cand, 1],
+                y=self.knowledge.xyz_wgs[self.knowledge.ind_cand, 0],
+                z=-self.knowledge.xyz_wgs[self.knowledge.ind_cand, 2],
                 mode='markers',
                 marker=dict(
                     size=15,
@@ -123,9 +123,9 @@ class KnowledgePlot:
 
         if len(self.knowledge.ind_cand_filtered):
             fig.add_trace(go.Scatter3d(
-                x=self.knowledge.coordinates[self.knowledge.ind_cand_filtered, 1],
-                y=self.knowledge.coordinates[self.knowledge.ind_cand_filtered, 0],
-                z=-self.knowledge.coordinates[self.knowledge.ind_cand_filtered, 2],
+                x=self.knowledge.xyz_wgs[self.knowledge.ind_cand_filtered, 1],
+                y=self.knowledge.xyz_wgs[self.knowledge.ind_cand_filtered, 0],
+                z=-self.knowledge.xyz_wgs[self.knowledge.ind_cand_filtered, 2],
                 mode='markers',
                 marker=dict(
                     size=10,
@@ -160,9 +160,9 @@ class KnowledgePlot:
             )
 
         fig.add_trace(go.Scatter3d(
-            x=[self.knowledge.coordinates[self.knowledge.ind_now, 1]],
-            y=[self.knowledge.coordinates[self.knowledge.ind_now, 0]],
-            z=[-self.knowledge.coordinates[self.knowledge.ind_now, 2]],
+            x=[self.knowledge.xyz_wgs[self.knowledge.ind_now, 1]],
+            y=[self.knowledge.xyz_wgs[self.knowledge.ind_now, 0]],
+            z=[-self.knowledge.xyz_wgs[self.knowledge.ind_now, 2]],
             mode='markers',
             marker=dict(
                 size=20,

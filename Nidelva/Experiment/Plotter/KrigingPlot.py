@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
@@ -376,52 +377,91 @@ class KrigingPlot:
             ind_depth_layer = np.where(self.coordinates_grid[:, 2] == self.depth_layers[i])[0]
 
             self.dataframe_field = pd.DataFrame(np.hstack((self.coordinates_grid[ind_depth_layer, :],
-                                                           self.mu_sinmod[ind_depth_layer,].reshape(-1, 1),
-                                                           self.mu_prior[ind_depth_layer, :].reshape(-1, 1),
-                                                           self.mu_posterior[ind_depth_layer, :].reshape(-1, 1),
-                                                           self.excursion_prob_prior[ind_depth_layer, :].reshape(-1, 1),
-                                                           self.excursion_prob_posterior[ind_depth_layer, :].reshape(-1, 1),
-                                                           self.excursion_set_prior[ind_depth_layer, :].reshape(-1, 1),
-                                                           self.excursion_set_posterior[ind_depth_layer, :].reshape(-1, 1),
-                                                           self.pred_err[ind_depth_layer, :].reshape(-1, 1))),
+                                                           self.mu_sinmod[ind_depth_layer].reshape(-1, 1),
+                                                           self.mu_prior[ind_depth_layer].reshape(-1, 1),
+                                                           self.mu_posterior[ind_depth_layer].reshape(-1, 1),
+                                                           self.excursion_prob_prior[ind_depth_layer].reshape(-1, 1),
+                                                           self.excursion_prob_posterior[ind_depth_layer].reshape(-1,
+                                                                                                                  1),
+                                                           self.excursion_set_prior[ind_depth_layer].reshape(-1, 1),
+                                                           self.excursion_set_posterior[ind_depth_layer].reshape(-1, 1),
+                                                           self.pred_err[ind_depth_layer].reshape(-1, 1))),
                                                 columns=["lat", "lon", "depth", "mu_sinmod", "mu_prior", "mu_posterior",
                                                          "excursion_prob_prior", "excursion_prob_posterior",
                                                          "excursion_set_prior", "excursion_set_posterior",
                                                          "prediction_error"])
-            datapath_layer = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Experiment/Data/field_data_{:d}.csv".format(i)
+            datapath_layer = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Experiment/Data/field_data_{:d}.csv".format(
+                i)
             self.dataframe_field.to_csv(datapath_layer, index=False)
             print("Data is saved successfully!")
 
-        pass
+    def smooth_data(self):
+        datapath = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Experiment/Data/field_data_0.csv"
+        datapath_new = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Experiment/Data/field_data_0_smooth.csv"
+        df = pd.read_csv(datapath)
+
+        # == get the coarser grid data ==
+        self.lat = df['lat'].to_numpy()
+        self.lon = df['lon'].to_numpy()
+        self.ep_prior = df['excursion_prob_prior'].to_numpy()
+        self.ep_posterior = df['excursion_prob_posterior'].to_numpy()
+        self.x, self.y = latlon2xy(self.lat, self.lon, PIVOT[0], PIVOT[1])
+        self.x, self.y = map(vectorise, [self.x, self.y])
+
+        # == rotate back to normal grid ==
+        self.xyz_wgs = np.hstack((self.x, self.y, np.ones_like(self.x)))
+        self.rom_usr = getRotationalMatrix_WGS2USR(ANGLE_ROTATION)
+        self.xyz_usr = (self.rom_usr @ self.xyz_wgs.T).T
+
+        # == interpolate to finer grid ==
+        grid_x_posterior, grid_y_posterior, grid_value_posterior = interpolate_2d(self.xyz_usr[:, 0], self.xyz_usr[:, 1], 100, 100, self.ep_posterior)
+        grid_x_prior, grid_y_prior, grid_value_prior = interpolate_2d(self.xyz_usr[:, 0], self.xyz_usr[:, 1], 100, 100, self.ep_prior)
+        grid_value_posterior = refill_nan_values(grid_value_posterior)
+        self.grid_refined = []
+        self.values_refined = []
+        for j in range(grid_x_posterior.shape[0]):
+            for k in range(grid_x_posterior.shape[1]):
+                self.grid_refined.append([grid_x_posterior[j, k], grid_y_posterior[j, k], 0])
+                self.values_refined.append([grid_value_prior[j, k], grid_value_posterior[j, k]])
+        self.grid_refined = np.array(self.grid_refined)
+        self.values_refined = np.array(self.values_refined)
+
+        # == rotate finer regular grid back to wgs grid and convert from xyz to latlon ==
+        rom_wgs = getRotationalMatrix_USR2WGS(ANGLE_ROTATION)
+        self.grid_refined_wgs = (rom_wgs @ self.grid_refined.T).T
+        lat_refined, lon_refined = xy2latlon(self.grid_refined_wgs[:, 0], self.grid_refined_wgs[:, 1], PIVOT[0], PIVOT[1])
+        lat_refined, lon_refined = map(vectorise, [lat_refined, lon_refined])
+        self.coordinates_refined = np.hstack((lat_refined, lon_refined, np.ones_like(lat_refined)))
+        df = pd.DataFrame(np.hstack((self.coordinates_refined, self.values_refined)), columns=['lat', 'lon', 'depth', 'ep_prior', 'ep_posterior'])
+        df.to_csv(datapath_new, index=False)
+        print("Finished smoothing~")
 
 a = KrigingPlot()
-a.plot()
+# a.plot()
+a.smooth_data()
+#%%
+# plt.plot(a.xyz_grid[:, 1], a.xyz_grid[:, 0], 'k.')
+# plt.plot(a.coordinates_grid[:, 1], a.coordinates_grid[:, 0], 'k.')
+# plt.show()
+plt.plot(a.xyz_wgs[:, 1], a.xyz_wgs[:, 0], 'r.')
+plt.plot(a.xyz_org[:, 1], a.xyz_org[:, 0], 'k.')
+plt.show()
+#%%
+# plt.plot(a.grid_refined_wgs[:, 1], a.grid_refined_wgs[:, 0], 'y.')
+plt.plot(a.coordinates_refined[:, 1], a.coordinates_refined[:, 0], 'g.')
+plt.show()
+#%%
+plt.scatter(a.lon, a.lat, c=a.ep_posterior, cmap='BrBG')
+plt.colorbar()
+plt.show()
 
 #%%
-def save_processed_data_slices(self):
-    self.pred_err = vectorise(np.sqrt(np.diag(self.Sigma_posterior)))
-    for i in range(len(self.depth_layers)):
-        ind_depth_layer = np.where(self.coordinates_grid[:, 2] == self.depth_layers[i])[0]
+plt.plot(a.xyz_usr[:, 1], a.xyz_usr[:, 0], 'k.')
+plt.plot(a.xyz_wgs[:, 1], a.xyz_wgs[:, 0], 'r.')
+plt.show()
 
-        self.dataframe_field = pd.DataFrame(np.hstack((self.coordinates_grid[ind_depth_layer, :],
-                                                       self.mu_sinmod[ind_depth_layer].reshape(-1, 1),
-                                                       self.mu_prior[ind_depth_layer].reshape(-1, 1),
-                                                       self.mu_posterior[ind_depth_layer].reshape(-1, 1),
-                                                       self.excursion_prob_prior[ind_depth_layer].reshape(-1, 1),
-                                                       self.excursion_prob_posterior[ind_depth_layer].reshape(-1, 1),
-                                                       self.excursion_set_prior[ind_depth_layer].reshape(-1, 1),
-                                                       self.excursion_set_posterior[ind_depth_layer].reshape(-1, 1),
-                                                       self.pred_err[ind_depth_layer].reshape(-1, 1))),
-                                            columns=["lat", "lon", "depth", "mu_sinmod", "mu_prior", "mu_posterior",
-                                                     "excursion_prob_prior", "excursion_prob_posterior",
-                                                     "excursion_set_prior", "excursion_set_posterior",
-                                                     "prediction_error"])
-        datapath_layer = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Experiment/Data/field_data_{:d}.csv".format(
-            i)
-        self.dataframe_field.to_csv(datapath_layer, index=False)
-        print("Data is saved successfully!")
-
-    pass
-
-save_processed_data_slices(a)
+#%%
+plt.scatter(a.grid_refined[:, 1], a.grid_refined[:, 0], c=a.values_refined, cmap="BrBG")
+plt.colorbar()
+plt.show()
 

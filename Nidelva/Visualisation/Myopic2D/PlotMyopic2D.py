@@ -93,7 +93,7 @@ class Myopic2D:
             # filename = "P_{:02d}".format(i)
             self.knowledge = Sampler(self.knowledge, self.ground_truth, self.ind_sample).Knowledge
             lat_next, lon_next, depth_next = MyopicPlanning_2D(knowledge=self.knowledge).next_waypoint
-            self.ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next], self.knowledge.coordinates)
+            self.ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next], self.knowledge.xyz_wgs)
             self.path_yoyo_ind.append(self.ind_sample)
             self.knowledge.step_no = i
             # self.get_excursion_set()

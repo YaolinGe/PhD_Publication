@@ -18,7 +18,7 @@ class ContentPlot:
         if knowledge is None:
             raise ValueError("")
         self.knowledge = knowledge
-        self.coordinates = self.knowledge.coordinates
+        self.coordinates = self.knowledge.xyz_wgs
         self.trajectory = np.array(trajectory)
         self.vmin = vmin
         self.vmax = vmax
