@@ -7,6 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
 from matplotlib import cm
+import matplotlib.path as mplPath  # used to determine whether a point is inside the grid or not
 
 # Plotly 3D plot
 import plotly.graph_objects as go

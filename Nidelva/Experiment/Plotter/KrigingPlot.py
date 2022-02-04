@@ -174,6 +174,74 @@ class KrigingPlot:
         self.coordinates_fake_auv = np.hstack((lat_auv, lon_auv, depth_auv))
         print("Fake coordinates are created successfully!")
 
+    def get_data_on_bigger_canvas(self):
+        self.box = self.get_box_region()
+        self.box_region = mplPath.Path(self.box)
+
+        # == get bigger canvas ==
+        lat_min, lon_min, depth_min = map(np.amin, [self.coordinates_grid[:, 0], self.coordinates_grid[:, 1], self.coordinates_grid[:, 2]])
+        lat_max, lon_max, depth_max = map(np.amax, [self.coordinates_grid[:, 0], self.coordinates_grid[:, 1], self.coordinates_grid[:, 2]])
+        nlat = 50
+        nlon = 50
+        ndepth = 5
+        lat_canvas = np.linspace(lat_min, lat_max, nlat)
+        lon_canvas = np.linspace(lon_min, lon_max, nlon)
+        depth_canvas = np.linspace(depth_min, depth_max, ndepth)
+        self.coordinates_canvas = []
+        for i in range(nlat):
+            for j in range(nlon):
+                for k in range(ndepth):
+                    self.coordinates_canvas.append([lat_canvas[i], lon_canvas[j], depth_canvas[k]])
+        self.coordinates_canvas = np.array(self.coordinates_canvas)
+        self.lat_canvas = self.coordinates_canvas[:, 0]
+        self.lon_canvas = self.coordinates_canvas[:, 1]
+        self.depth_canvas = self.coordinates_canvas[:, 2]
+
+        print("Here comes the data extraction")
+        # == extract data ==
+        t1 = time.time()
+        x_canvas, y_canvas = latlon2xy(self.lat_canvas, self.lon_canvas, 0, 0)
+        x_grid, y_grid = latlon2xy(self.coordinates_grid[:, 0], self.coordinates_grid[:, 1], 0, 0)
+        x_canvas, y_canvas, depth_canvas, x_grid, y_grid, depth_grid = \
+            map(vectorise, [x_canvas, y_canvas, self.depth_canvas, x_grid, y_grid, self.coordinates_grid[:, 2]])
+
+        self.DistanceMatrix_x = x_canvas @ np.ones([1, len(x_grid)]) - np.ones([len(x_canvas), 1]) @ x_grid.T
+        self.DistanceMatrix_y = y_canvas @ np.ones([1, len(y_grid)]) - np.ones([len(y_canvas), 1]) @ y_grid.T
+        self.DistanceMatrix_depth = depth_canvas @ np.ones([1, len(depth_grid)]) - np.ones(
+            [len(depth_canvas), 1]) @ depth_grid.T
+        self.DistanceMatrix = self.DistanceMatrix_x ** 2 + self.DistanceMatrix_y ** 2 + self.DistanceMatrix_depth ** 2
+        self.ind_extracted = np.argmin(self.DistanceMatrix, axis=1)  # interpolated vectorised indices
+        t2 = time.time()
+        print("Data extraction takes ", t2 - t1)
+        self.mu_prior_canvas = vectorise(self.mu_prior[self.ind_extracted])
+        self.mu_posterior_canvas = vectorise(self.mu_posterior[self.ind_extracted])
+        self.ep_prior_canvas = vectorise(self.excursion_prob_prior[self.ind_extracted])
+        self.ep_posterior_canvas = vectorise(self.excursion_prob_posterior[self.ind_extracted])
+
+        for i in range(len(self.ep_posterior_canvas)):
+            if not self.box_region.contains_point((self.lat_canvas[i], self.lon_canvas[i])):
+                self.mu_prior_canvas[i] = float("NaN")
+                self.mu_posterior_canvas[i] = float("NaN")
+                self.ep_prior_canvas[i] = float("NaN")
+                self.ep_posterior_canvas[i] = float("NaN")
+
+        # plt.plot()
+        # plt.plot(self.coordinates_canvas[:, 1], self.coordinates_canvas[:, 0], 'k.')
+        # plt.plot(self.coordinates_grid[:, 1], self.coordinates_grid[:, 0], 'r.')
+        # plt.plot(self.box[:, 1], self.box[:, 0], 'k*', markersize=10)
+        # plt.show()
+
+    def get_box_region(self):
+        loc_usr = np.array([[XLIM[0], YLIM[0], 0],
+                            [XLIM[0], YLIM[1], 0],
+                            [XLIM[1], YLIM[1], 0],
+                            [XLIM[1], YLIM[0], 0]])
+        rom_wgs = getRotationalMatrix_USR2WGS(ANGLE_ROTATION)
+        loc_wgs = (rom_wgs @ loc_usr.T).T
+        lat_box, lon_box = xy2latlon(loc_wgs[:, 0], loc_wgs[:, 1], PIVOT[0], PIVOT[1])
+        box = np.hstack((vectorise(lat_box), vectorise(lon_box)))
+        return box
+
     def get_boundary(self, excursion_prob):
         boundary = np.zeros_like(excursion_prob)
         # ind_boundary = np.where((excursion_prob >= .475) * (excursion_prob <= .525))[0]
@@ -182,82 +250,37 @@ class KrigingPlot:
         return boundary
 
     def plot(self):
-        self.get_fake_rectangular_grid()
+        # self.get_fake_rectangular_grid()
         # == smoothing section
-        lat = self.coordinates_fake[:, 0]
-        lon = self.coordinates_fake[:, 1]
-        depth = self.coordinates_fake[:, 2]
+        lat = self.coordinates_canvas[:, 0]
+        lon = self.coordinates_canvas[:, 1]
+        depth = self.coordinates_canvas[:, 2]
 
-        coordinates_mu_prior, values_mu_prior = interpolate_3d(lon, lat, depth, self.mu_prior)
-        coordinates_ep_prior, values_ep_prior = interpolate_3d(lon, lat, depth, self.excursion_prob_prior)
-        coordinates_es_prior, values_es_prior = interpolate_3d(lon, lat, depth, self.excursion_set_prior)
-        coordinates_boundary_prior, values_boundary_prior = interpolate_3d(lon, lat, depth, self.boundary_prior)
+        values_mu = refill_nan_values(self.mu_posterior_canvas)
+        values_ep = refill_nan_values(self.ep_posterior_canvas)
 
-        coordinates_mu_posterior, values_mu_posterior = interpolate_3d(lon, lat, depth, self.mu_posterior)
-        coordinates_ep_posterior, values_ep_posterior = interpolate_3d(lon, lat, depth, self.excursion_prob_posterior)
-        coordinates_es_posterior, values_es_posterior = interpolate_3d(lon, lat, depth, self.excursion_set_posterior)
-        coordinates_boundary_posterior, values_boundary_posterior = interpolate_3d(lon, lat, depth, self.boundary_posterior)
+        # coordinates_mu_prior, values_mu_prior = interpolate_3d(lon, lat, depth, self.mu_prior_canvas)
+        # coordinates_ep_prior, values_ep_prior = interpolate_3d(lon, lat, depth, self.ep_prior_canvas)
+        # coordinates_es_prior, values_es_prior = interpolate_3d(lon, lat, depth, self.excursion_set_prior)
+        # coordinates_boundary_prior, values_boundary_prior = interpolate_3d(lon, lat, depth, self.boundary_prior)
+        #
+        # coordinates_mu_posterior, values_mu_posterior = interpolate_3d(lon, lat, depth, self.mu_posterior_canvas)
+        # coordinates_ep_posterior, values_ep_posterior = interpolate_3d(lon, lat, depth, self.ep_posterior_canvas)
+        # coordinates_es_posterior, values_es_posterior = interpolate_3d(lon, lat, depth, self.excursion_set_posterior)
+        # coordinates_boundary_posterior, values_boundary_posterior = interpolate_3d(lon, lat, depth, self.boundary_posterior)
+
+
+        # == remove smoothing section ==
+
 
         fig = make_subplots(rows=1, cols=1, specs=[[{'type': 'scene'}]])
-        # fig.add_trace(go.Scatter3d(
-        #     x=self.coordinates_fake[:, 1],
-        #     y=self.coordinates_fake[:, 0],
-        #     z=-self.coordinates_fake[:, 2],
-        #     # value=self.mu_sinmod.flatten(),
-        #
-        #     # isomin=0,
-        #     # isomax=30,
-        #     # opacity=.1,
-        #     # surface_count=30,
-        #     mode='markers',
-        #         marker=dict(
-        #             size=5,
-        #             color=self.mu_posterior.flatten(),
-        #             colorscale="brbg",
-        #             showscale=True,
-        #
-        #         ),
-        #     # colorscale="brbg",
-        #     # caps=dict(x_show=False, y_show=False, z_show=False),
-        # ),
-        #     row=1, col=1
-        # )
-
-        posterior = True
-
-        # == posterior ==
-        if posterior:
-            coordinates_mean = coordinates_mu_posterior
-            values_mean = values_mu_posterior
-
-            coordinates_es = coordinates_es_posterior
-            values_es = values_es_posterior
-
-            coordinates_ep = coordinates_ep_posterior
-            values_ep = values_ep_posterior
-
-            coordinates_b = coordinates_boundary_posterior
-            values_b = values_boundary_posterior
-
-        else:
-            coordinates_mean = coordinates_mu_prior
-            values_mean = values_mu_prior
-
-            coordinates_es = coordinates_es_prior
-            values_es = values_es_prior
-
-            coordinates_ep = coordinates_ep_prior
-            values_ep = values_ep_prior
-
-            coordinates_b = coordinates_boundary_prior
-            values_b = values_boundary_prior
 
         fig.add_trace(go.Volume(
-            x=coordinates_mean[:, 0],
-            y=coordinates_mean[:, 1],
-            z=-coordinates_mean[:, 2],
-            value=values_mean.flatten(),
-            isomin=16,
+            x=self.coordinates_canvas[:, 1],
+            y=self.coordinates_canvas[:, 0],
+            z=-self.coordinates_canvas[:, 2],
+            value=values_mu.flatten(),
+            isomin=25,
             isomax=30,
             opacity=.1,
             surface_count=30,
@@ -267,43 +290,15 @@ class KrigingPlot:
             row=1, col=1
         )
 
-        # zv = coordinates_ep[:, 2]
-        # for j in range(len(np.unique(zv))):
-        #     ind = (zv == np.unique(zv)[j])
-        #     fig.add_trace(
-        #         go.Isosurface(x=coordinates_ep[ind, 0],
-        #                       y=coordinates_ep[ind, 1],
-        #                       z=-zv[ind],
-        #                       opacity=.3,
-        #                       # value=mu_cond[ind], colorscale=newcmp),
-        #                       value=values_ep[ind], coloraxis="coloraxis"),
-        #         row=1, col=1
-        #     )
-
-        # fig.add_trace(go.Volume(
-        #     x=coordinates_ep[:, 0],
-        #     y=coordinates_ep[:, 1],
-        #     z=-coordinates_ep[:, 2],
-        #     value=values_ep.flatten(),
-        #     isomin=0,
-        #     isomax=1,
-        #     opacity=.05,
-        #     surface_count=15,
-        #     coloraxis="coloraxis",
-        #     caps=dict(x_show=False, y_show=False, z_show=False),
-        # ),
-        #     row=1, col=1
-        # )
         fig.add_trace(go.Volume(
-            x=coordinates_ep[:, 0],
-            y=coordinates_ep[:, 1],
-            z=-coordinates_ep[:, 2],
+            x=self.coordinates_canvas[:, 1],
+            y=self.coordinates_canvas[:, 0],
+            z=-self.coordinates_canvas[:, 2],
             value=values_ep.flatten(),
             isomin=.75,
             isomax=1,
             opacity=.7,
             surface_count=1,
-            # colorscale="Peach",
             colorscale="turbid",
             showscale=False,
             caps=dict(x_show=False, y_show=False, z_show=False),
@@ -311,22 +306,133 @@ class KrigingPlot:
             row=1, col=1
         )
 
-        if posterior:
-            fig.add_trace(go.Scatter3d(
-                x=self.coordinates_fake_auv[:, 1],
-                y=self.coordinates_fake_auv[:, 0],
-                z=-self.coordinates_fake_auv[:, 2],
-                # mode='markers+lines',
-                mode='lines',
-                line=dict(
-                    color="black",
-                    width=5,
-                    showscale=False,
-                ),
-                showlegend=False,
-            ),
-                row='all', col='all'
-            )
+        # fig.add_trace(go.Scatter3d(
+        #     x=self.coordinates_grid[:, 1],
+        #     y=self.coordinates_grid[:, 0],
+        #     z=-self.coordinates_grid[:, 2],
+        #     # value=self.mu_posterior.flatten(),
+        #     mode='markers',
+        #     marker=dict(
+        #         size=5,
+        #         color=self.mu_posterior.flatten(),
+        #         colorscale='BrBG',   # choose a colorscale
+        #         # opacity=0.
+        #     )
+        #     # isomin=16,
+        #     # isomax=30,
+        #     # opacity=.1,
+        #     # surface_count=30,
+        #     # coloraxis="coloraxis",
+        #     # caps=dict(x_show=False, y_show=False, z_show=False),
+        # ),
+        #     row=1, col=1
+        # )
+
+        # fig.add_trace(go.Volume(
+        #     x=self.coordinates_grid[:, 1],
+        #     y=self.coordinates_grid[:, 0],
+        #     z=-self.coordinates_grid[:, 2],
+        #     value=self.mu_posterior.flatten(),
+        #     isomin=16,
+        #     isomax=30,
+        #     opacity=.1,
+        #     surface_count=30,
+        #     coloraxis="coloraxis",
+        #     caps=dict(x_show=False, y_show=False, z_show=False),
+        # ),
+        #     row=1, col=1
+        # )
+
+
+        posterior = True
+        # == posterior ==
+        # if posterior:
+        #     coordinates_mean = coordinates_mu_posterior
+        #     values_mean = values_mu_posterior
+        #
+        #     # coordinates_es = coordinates_es_posterior
+        #     # values_es = values_es_posterior
+        #
+        #     coordinates_ep = coordinates_ep_posterior
+        #     values_ep = values_ep_posterior
+        #
+        #     # coordinates_b = coordinates_boundary_posterior
+        #     # values_b = values_boundary_posterior
+        #
+        # else:
+        #     coordinates_mean = coordinates_mu_prior
+        #     values_mean = values_mu_prior
+        #
+        #     # coordinates_es = coordinates_es_prior
+        #     # values_es = values_es_prior
+        #
+        #     coordinates_ep = coordinates_ep_prior
+        #     values_ep = values_ep_prior
+        #
+        #     # coordinates_b = coordinates_boundary_prior
+        #     # values_b = values_boundary_prior
+        #
+        # fig.add_trace(go.Volume(
+        #     x=coordinates_mean[:, 0],
+        #     y=coordinates_mean[:, 1],
+        #     z=-coordinates_mean[:, 2],
+        #     value=values_mean.flatten(),
+        #     isomin=16,
+        #     isomax=30,
+        #     opacity=.1,
+        #     surface_count=30,
+        #     coloraxis="coloraxis",
+        #     caps=dict(x_show=False, y_show=False, z_show=False),
+        # ),
+        #     row=1, col=1
+        # )
+        #
+        # # zv = coordinates_ep[:, 2]
+        # # for j in range(len(np.unique(zv))):
+        # #     ind = (zv == np.unique(zv)[j])
+        # #     fig.add_trace(
+        # #         go.Isosurface(x=coordinates_ep[ind, 0],
+        # #                       y=coordinates_ep[ind, 1],
+        # #                       z=-zv[ind],
+        # #                       opacity=.3,
+        # #                       # value=mu_cond[ind], colorscale=newcmp),
+        # #                       value=values_ep[ind], coloraxis="coloraxis"),
+        # #         row=1, col=1
+        # #     )
+        #
+        # fig.add_trace(go.Volume(
+        #     x=coordinates_ep[:, 0],
+        #     y=coordinates_ep[:, 1],
+        #     z=-coordinates_ep[:, 2],
+        #     value=values_ep.flatten(),
+        #     isomin=.75,
+        #     isomax=1,
+        #     opacity=.7,
+        #     surface_count=1,
+        #     # colorscale="Peach",
+        #     colorscale="turbid",
+        #     showscale=False,
+        #     caps=dict(x_show=False, y_show=False, z_show=False),
+        # ),
+        #     row=1, col=1
+        # )
+
+        # if posterior:
+        #     fig.add_trace(go.Scatter3d(
+        #         x=self.coordinates_fake_auv[:, 1],
+        #         y=self.coordinates_fake_auv[:, 0],
+        #         z=-self.coordinates_fake_auv[:, 2],
+        #         # mode='markers+lines',
+        #         mode='lines',
+        #         line=dict(
+        #             color="black",
+        #             width=5,
+        #             showscale=False,
+        #         ),
+        #         showlegend=False,
+        #     ),
+        #         row='all', col='all'
+        #     )
 
         camera = dict(
             up=dict(x=0, y=0, z=1),
@@ -437,31 +543,8 @@ class KrigingPlot:
         print("Finished smoothing~")
 
 a = KrigingPlot()
-# a.plot()
-a.smooth_data()
-#%%
-# plt.plot(a.xyz_grid[:, 1], a.xyz_grid[:, 0], 'k.')
-# plt.plot(a.coordinates_grid[:, 1], a.coordinates_grid[:, 0], 'k.')
-# plt.show()
-plt.plot(a.xyz_wgs[:, 1], a.xyz_wgs[:, 0], 'r.')
-plt.plot(a.xyz_org[:, 1], a.xyz_org[:, 0], 'k.')
-plt.show()
-#%%
-# plt.plot(a.grid_refined_wgs[:, 1], a.grid_refined_wgs[:, 0], 'y.')
-plt.plot(a.coordinates_refined[:, 1], a.coordinates_refined[:, 0], 'g.')
-plt.show()
-#%%
-plt.scatter(a.lon, a.lat, c=a.ep_posterior, cmap='BrBG')
-plt.colorbar()
-plt.show()
+a.get_data_on_bigger_canvas()
+a.plot()
+# a.smooth_data()
 
-#%%
-plt.plot(a.xyz_usr[:, 1], a.xyz_usr[:, 0], 'k.')
-plt.plot(a.xyz_wgs[:, 1], a.xyz_wgs[:, 0], 'r.')
-plt.show()
-
-#%%
-plt.scatter(a.grid_refined[:, 1], a.grid_refined[:, 0], c=a.values_refined, cmap="BrBG")
-plt.colorbar()
-plt.show()
 
