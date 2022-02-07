@@ -27,7 +27,7 @@ class KnowledgePlot:
         if knowledge is None:
             raise ValueError("")
         self.knowledge = knowledge
-        self.coordinates = self.knowledge.xyz_wgs
+        self.coordinates = self.knowledge.coordinates
         self.vmin = vmin
         self.vmax = vmax
         self.filename = filename

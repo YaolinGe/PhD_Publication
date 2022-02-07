@@ -44,9 +44,3 @@ class Knowledge:
         self.expectedVariance = []
         self.distance_travelled = [0]
 
-
-
-
-
-
-

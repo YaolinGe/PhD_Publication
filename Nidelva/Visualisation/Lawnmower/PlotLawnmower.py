@@ -17,30 +17,9 @@ from Nidelva.Simulation.Field.Grid.gridWithinPolygonGenerator import GridGenerat
 from Nidelva.Simulation.GP_kernel.Matern_kernel import MaternKernel
 from Nidelva.Simulation.Simulator.Sampler import Sampler
 from Nidelva.Simulation.Simulator.SimulationResultContainer import SimulationResultContainer
+from Nidelva.Visualisation.Config.config import *
 from usr_func import *
 import time
-
-
-# ==== Field Config ====
-DEPTH = [.5, 1, 1.5, 2.0, 2.5]
-DISTANCE_LATERAL = 120
-DISTANCE_VERTICAL = np.abs(DEPTH[1] - DEPTH[0])
-DISTANCE_TOLERANCE = 1
-DISTANCE_SELF = 20
-THRESHOLD = 28
-# ==== End Field Config ====
-
-# ==== GP Config ====
-SILL = .5
-RANGE_LATERAL = 550
-RANGE_VERTICAL = 2
-NUGGET = .04
-# ==== End GP Config ====
-
-# ==== Plot Config ======
-VMIN = 16
-VMAX = 28
-# ==== End Plot Config ==
 
 
 class Lawnmower:
@@ -108,6 +87,4 @@ class Lawnmower:
 
 a = Lawnmower(steps=20)
 a.run_lawn_mower()
-
-
 

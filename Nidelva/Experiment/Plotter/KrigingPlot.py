@@ -502,8 +502,8 @@ class KrigingPlot:
             print("Data is saved successfully!")
 
     def smooth_data(self):
-        datapath = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Experiment/Data/field_data_0.csv"
-        datapath_new = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Experiment/Data/field_data_0_smooth.csv"
+        datapath = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Experiment/Data/field_data_1.csv"
+        datapath_new = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Experiment/Data/field_data_1_smooth.csv"
         df = pd.read_csv(datapath)
 
         # == get the coarser grid data ==
@@ -543,8 +543,8 @@ class KrigingPlot:
         print("Finished smoothing~")
 
 a = KrigingPlot()
-a.get_data_on_bigger_canvas()
-a.plot()
-# a.smooth_data()
+# a.get_data_on_bigger_canvas()
+# a.plot()
+a.smooth_data()
 
 
