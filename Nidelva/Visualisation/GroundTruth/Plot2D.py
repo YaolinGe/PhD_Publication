@@ -13,6 +13,7 @@ from matplotlib.ticker import FormatStrFormatter
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 
+
 class Plot2D:
 
     def __init__(self, knowledge=None, vmin=28, vmax=30, filename="mean"):
