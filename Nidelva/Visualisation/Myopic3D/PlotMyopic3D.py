@@ -52,23 +52,24 @@ class Myopic3D:
                                    distance_lateral=DISTANCE_LATERAL, distance_vertical=DISTANCE_VERTICAL,
                                    distance_tolerance=DISTANCE_TOLERANCE, distance_self=DISTANCE_SELF)
         self.ground_truth = np.linalg.cholesky(self.knowledge.Sigma) @ \
-                            vectorise(np.random.randn(self.knowledge.coordinates.shape[0])) + self.knowledge.mu
+                            vectorise(np.random.randn(self.knowledge.coordinates.shape[0])) + self.knowledge.mu + GROUND_OFFSET
         t2 = time.time()
         print("Simulation config is done, time consumed: ", t2 - t1)
 
     def run_3d(self):
-        self.starting_loc = [63.449, 10.415, 0.5]
+        self.starting_loc = [63.4489, 10.415, 0.5]
         # self.ind_start = np.random.randint(0, self.knowledge.coordinates.shape[0])
+        # self.starting_loc = self.knowledge.coordinates[self.ind_start]
         self.ind_start = get_grid_ind_at_nearest_loc(self.starting_loc, self.knowledge.coordinates) # get nearest neighbour
         self.knowledge.ind_prev = self.knowledge.ind_now = self.ind_sample = self.ind_start
 
-        filename = "myopic3d"
+        filename = "myopic3d_offset"
         for i in range(self.steps):
             print("Step No. ", i)
             # filename = "P_{:02d}".format(i)
             self.knowledge = Sampler(self.knowledge, self.ground_truth, self.ind_sample).Knowledge
             lat_next, lon_next, depth_next = MyopicPlanning_3D(knowledge=self.knowledge).next_waypoint
-            self.ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next], self.knowledge.xyz_wgs)
+            self.ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next], self.knowledge.coordinates)
             self.knowledge.step_no = i
             # self.get_excursion_set()
             # ContentPlot(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX, filename=filename, html=False)
@@ -79,8 +80,8 @@ class Myopic3D:
         self.knowledge.excursion_set = np.zeros_like(self.knowledge.mu)
         self.knowledge.excursion_set[self.knowledge.mu < self.knowledge.threshold_salinity] = True
 
-
-a = Myopic3D(steps=20)
+seed = 0
+a = Myopic3D(steps=20, random_seed=seed)
 a.run_3d()
 
 

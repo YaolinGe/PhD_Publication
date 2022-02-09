@@ -19,7 +19,7 @@ class Sampler:
         self.sample()
 
     def sample(self):
-        F = getFVector(self.ind_sample, self.knowledge.xyz_wgs.shape[0])
+        F = getFVector(self.ind_sample, self.knowledge.coordinates.shape[0])
         eibv = EIBV_1D(self.knowledge.threshold_salinity, self.knowledge.mu, self.knowledge.Sigma, F, self.knowledge.kernel.R)
         dist = self.getDistanceTravelled()
 
@@ -27,9 +27,9 @@ class Sampler:
             GPupd(mu_cond=self.knowledge.mu, Sigma_cond=self.knowledge.Sigma, F=F,
                   R=self.knowledge.kernel.R, y_sampled=self.ground_truth[self.ind_sample])
         self.knowledge.excursion_prob = get_excursion_prob_1d(self.knowledge.mu, self.knowledge.Sigma, self.knowledge.threshold_salinity)
-        self.knowledge.trajectory.append([self.knowledge.xyz_wgs[self.knowledge.ind_now, 0],
-                                          self.knowledge.xyz_wgs[self.knowledge.ind_now, 1],
-                                          self.knowledge.xyz_wgs[self.knowledge.ind_now, 2]])
+        self.knowledge.trajectory.append([self.knowledge.coordinates[self.knowledge.ind_now, 0],
+                                          self.knowledge.coordinates[self.knowledge.ind_now, 1],
+                                          self.knowledge.coordinates[self.knowledge.ind_now, 2]])
         self.knowledge.ind_visited.append(self.knowledge.ind_now)
         self.knowledge.ind_prev = self.knowledge.ind_now
         self.knowledge.ind_now = self.ind_sample
@@ -40,11 +40,11 @@ class Sampler:
         self.knowledge.distance_travelled.append(dist + self.knowledge.distance_travelled[-1])
 
     def getDistanceTravelled(self):
-        x_dist, y_dist = latlon2xy(self.knowledge.xyz_wgs[self.knowledge.ind_now, 0],
-                                   self.knowledge.xyz_wgs[self.knowledge.ind_now, 1],
-                                   self.knowledge.xyz_wgs[self.knowledge.ind_prev, 0],
-                                   self.knowledge.xyz_wgs[self.knowledge.ind_prev, 1])
-        z_dist = self.knowledge.xyz_wgs[self.knowledge.ind_now, 2] - self.knowledge.xyz_wgs[self.knowledge.ind_prev, 2]
+        x_dist, y_dist = latlon2xy(self.knowledge.coordinates[self.knowledge.ind_now, 0],
+                                   self.knowledge.coordinates[self.knowledge.ind_now, 1],
+                                   self.knowledge.coordinates[self.knowledge.ind_prev, 0],
+                                   self.knowledge.coordinates[self.knowledge.ind_prev, 1])
+        z_dist = self.knowledge.coordinates[self.knowledge.ind_now, 2] - self.knowledge.coordinates[self.knowledge.ind_prev, 2]
         dist = np.sqrt(x_dist ** 2 + y_dist ** 2 + z_dist ** 2)
         return dist
 

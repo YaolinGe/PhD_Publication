@@ -18,7 +18,7 @@ class ContentPlot:
         if knowledge is None:
             raise ValueError("")
         self.knowledge = knowledge
-        self.coordinates = self.knowledge.xyz_wgs
+        self.coordinates = self.knowledge.coordinates
         self.vmin = vmin
         self.vmax = vmax
         self.filename = filename
@@ -34,9 +34,9 @@ class ContentPlot:
         points_mean, values_mean = interpolate_3d(lon, lat, depth, self.knowledge.mu)
         points_es, values_es = interpolate_3d(lon, lat, depth, self.knowledge.excursion_set)
         trajectory = np.array(self.knowledge.trajectory)
-        trajectory = np.append(trajectory, np.array([[self.knowledge.xyz_wgs[self.knowledge.ind_now, 0],
-                                                      self.knowledge.xyz_wgs[self.knowledge.ind_now, 1],
-                                                      self.knowledge.xyz_wgs[self.knowledge.ind_now, 2]]]).reshape(1, -1), axis=0)
+        trajectory = np.append(trajectory, np.array([[self.knowledge.coordinates[self.knowledge.ind_now, 0],
+                                                      self.knowledge.coordinates[self.knowledge.ind_now, 1],
+                                                      self.knowledge.coordinates[self.knowledge.ind_now, 2]]]).reshape(1, -1), axis=0)
 
         fig = make_subplots(rows = 1, cols = 1, specs = [[{'type': 'scene'}]])
         fig.add_trace(go.Volume(
@@ -46,7 +46,7 @@ class ContentPlot:
             value=values_mean.flatten(),
             isomin=self.vmin,
             isomax=self.vmax,
-            opacity = .1,
+            opacity = .4,
             surface_count = 10,
             coloraxis="coloraxis",
             caps=dict(x_show=False, y_show=False, z_show = False),
@@ -54,27 +54,27 @@ class ContentPlot:
             row=1, col=1
         )
 
-        fig.add_trace(go.Volume(
-            x = points_es[:, 0],
-            y = points_es[:, 1],
-            z = -points_es[:, 2],
-            value=values_es.flatten(),
-            isomin=0,
-            isomax=1,
-            opacity = 0.4,
-            surface_count = 1,
-            colorscale = "Reds",
-            showscale=False,
-            caps=dict(x_show=False, y_show=False, z_show = False),
-            ),
-            row=1, col=1
-        )
+        # fig.add_trace(go.Volume(
+        #     x = points_es[:, 0],
+        #     y = points_es[:, 1],
+        #     z = -points_es[:, 2],
+        #     value=values_es.flatten(),
+        #     isomin=0,
+        #     isomax=1,
+        #     opacity = 0.4,
+        #     surface_count = 1,
+        #     colorscale = "Reds",
+        #     showscale=False,
+        #     caps=dict(x_show=False, y_show=False, z_show = False),
+        #     ),
+        #     row=1, col=1
+        # )
 
         if len(self.knowledge.ind_cand):
             fig.add_trace(go.Scatter3d(
-                x=self.knowledge.xyz_wgs[self.knowledge.ind_cand, 1],
-                y=self.knowledge.xyz_wgs[self.knowledge.ind_cand, 0],
-                z=-self.knowledge.xyz_wgs[self.knowledge.ind_cand, 2],
+                x=self.knowledge.coordinates[self.knowledge.ind_cand, 1],
+                y=self.knowledge.coordinates[self.knowledge.ind_cand, 0],
+                z=-self.knowledge.coordinates[self.knowledge.ind_cand, 2],
                 mode='markers',
                 marker=dict(
                     size=15,
@@ -88,9 +88,9 @@ class ContentPlot:
 
         if len(self.knowledge.ind_cand_filtered):
             fig.add_trace(go.Scatter3d(
-                x=self.knowledge.xyz_wgs[self.knowledge.ind_cand_filtered, 1],
-                y=self.knowledge.xyz_wgs[self.knowledge.ind_cand_filtered, 0],
-                z=-self.knowledge.xyz_wgs[self.knowledge.ind_cand_filtered, 2],
+                x=self.knowledge.coordinates[self.knowledge.ind_cand_filtered, 1],
+                y=self.knowledge.coordinates[self.knowledge.ind_cand_filtered, 0],
+                z=-self.knowledge.coordinates[self.knowledge.ind_cand_filtered, 2],
                 mode='markers',
                 marker=dict(
                     size=10,
@@ -125,9 +125,9 @@ class ContentPlot:
             )
 
         fig.add_trace(go.Scatter3d(
-            x=[self.knowledge.xyz_wgs[self.knowledge.ind_now, 1]],
-            y=[self.knowledge.xyz_wgs[self.knowledge.ind_now, 0]],
-            z=[-self.knowledge.xyz_wgs[self.knowledge.ind_now, 2]],
+            x=[self.knowledge.coordinates[self.knowledge.ind_now, 1]],
+            y=[self.knowledge.coordinates[self.knowledge.ind_now, 0]],
+            z=[-self.knowledge.coordinates[self.knowledge.ind_now, 2]],
             mode='markers',
             marker=dict(
                 size=20,
@@ -142,14 +142,14 @@ class ContentPlot:
         camera = dict(
             up=dict(x=0, y=0, z=1),
             center=dict(x=0, y=0, z=0),
-            eye=dict(x=1.25, y=-1.25, z=1)
+            eye=dict(x=0, y=-1.25, z=.5)
         )
 
         fig.update_coloraxes(colorscale="BrBG", colorbar=dict(lenmode='fraction', len=.5, thickness=20,
                                                                 tickfont=dict(size=18, family="Times New Roman"),
                                                                 title="Salinity",
                                                                 titlefont=dict(size=18, family="Times New Roman")))
-        fig.update_layout(coloraxis_colorbar_x=0.75)
+        fig.update_layout(coloraxis_colorbar_x=0.8)
 
         fig.update_layout(
             title={
@@ -167,7 +167,7 @@ class ContentPlot:
                 zaxis_tickfont=dict(size=14, family="Times New Roman"),
                 xaxis_title=dict(text="Longitude", font=dict(size=18, family="Times New Roman")),
                 yaxis_title=dict(text="Latitude", font=dict(size=18, family="Times New Roman")),
-                zaxis_title=dict(text="Depth", font=dict(size=18, family="Times New Roman")),
+                zaxis_title=dict(text="Depth [m]", font=dict(size=18, family="Times New Roman")),
             ),
             scene_aspectmode='manual',
             scene_aspectratio=dict(x=1, y=1, z=.25),

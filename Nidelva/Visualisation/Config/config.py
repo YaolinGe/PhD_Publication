@@ -19,5 +19,6 @@ NUGGET = .04
 # ==== Plot Config ======
 VMIN = 16
 VMAX = 28
+GROUND_OFFSET = 1.9
 # ==== End Plot Config ==
 

@@ -16,31 +16,10 @@ from Nidelva.Simulation.Field.Data.DataInterpolator import DataInterpolator
 from Nidelva.Simulation.Field.Grid.gridWithinPolygonGenerator import GridGenerator
 from Nidelva.Simulation.GP_kernel.Matern_kernel import MaternKernel
 from Nidelva.Simulation.Simulator.Sampler import Sampler
+from Nidelva.Visualisation.Config.config import *
 from Nidelva.Simulation.Simulator.SimulationResultContainer import SimulationResultContainer
 from usr_func import *
 import time
-
-
-# ==== Field Config ====
-DEPTH = [.5, 1, 1.5, 2.0, 2.5]
-DISTANCE_LATERAL = 120
-DISTANCE_VERTICAL = np.abs(DEPTH[1] - DEPTH[0])
-DISTANCE_TOLERANCE = 1
-DISTANCE_SELF = 20
-THRESHOLD = 28
-# ==== End Field Config ====
-
-# ==== GP Config ====
-SILL = .5
-RANGE_LATERAL = 550
-RANGE_VERTICAL = 2
-NUGGET = .04
-# ==== End GP Config ====
-
-# ==== Plot Config ======
-VMIN = 16
-VMAX = 28
-# ==== End Plot Config ==
 
 
 class Myopic2D:
@@ -73,27 +52,27 @@ class Myopic2D:
                                    distance_lateral=DISTANCE_LATERAL, distance_vertical=DISTANCE_VERTICAL,
                                    distance_tolerance=DISTANCE_TOLERANCE, distance_self=DISTANCE_SELF)
         self.ground_truth = np.linalg.cholesky(self.knowledge.Sigma) @ \
-                            vectorise(np.random.randn(self.knowledge.coordinates.shape[0])) + self.knowledge.mu
+                            vectorise(np.random.randn(self.knowledge.coordinates.shape[0])) + self.knowledge.mu + GROUND_OFFSET
         t2 = time.time()
         print("Simulation config is done, time consumed: ", t2 - t1)
 
     def run_2d(self):
-        self.ind_start = np.random.randint(0, self.knowledge.coordinates.shape[0])
-        self.starting_loc = [self.knowledge.coordinates[self.ind_start, 0],
-                             self.knowledge.coordinates[self.ind_start, 1],
-                             np.mean(DEPTH)] # middle layer
-        # self.starting_loc = [63.46, 10.41, 1.5]
+        # self.ind_start = np.random.randint(0, self.knowledge.coordinates.shape[0])
+        # self.starting_loc = [self.knowledge.coordinates[self.ind_start, 0],
+        #                      self.knowledge.coordinates[self.ind_start, 1],
+        #                      np.mean(DEPTH)] # middle layer
+        self.starting_loc = [63.4489, 10.415, 1.5]
         self.ind_start = get_grid_ind_at_nearest_loc(self.starting_loc, self.knowledge.coordinates) # get nearest neighbour
         self.knowledge.ind_prev = self.knowledge.ind_now = self.ind_sample = self.ind_start
         self.path_yoyo_ind.append(self.ind_sample)
 
-        filename = "myopic2d"
+        filename = "myopic2d_offset"
         for i in range(self.steps):
             print("Steps: ", i)
             # filename = "P_{:02d}".format(i)
             self.knowledge = Sampler(self.knowledge, self.ground_truth, self.ind_sample).Knowledge
             lat_next, lon_next, depth_next = MyopicPlanning_2D(knowledge=self.knowledge).next_waypoint
-            self.ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next], self.knowledge.xyz_wgs)
+            self.ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next], self.knowledge.coordinates)
             self.path_yoyo_ind.append(self.ind_sample)
             self.knowledge.step_no = i
             # self.get_excursion_set()
@@ -121,8 +100,10 @@ class Myopic2D:
         self.knowledge.excursion_set = np.zeros_like(self.knowledge.mu)
         self.knowledge.excursion_set[self.knowledge.mu < self.knowledge.threshold_salinity] = True
 
-
-a = Myopic2D(steps=20)
+# seed = np.random.randint(100)
+seed = 0
+a = Myopic2D(steps=20, random_seed=seed)
 a.run_2d()
+print("seed: ", seed)
 
 

@@ -64,11 +64,11 @@ class SINMODVisualiser:
         Plot2D(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX, filename="SINMOD2D")
 
     def plot_ground_truth(self):
-        self.knowledge.mu = self.ground_truth
+        self.knowledge.mu = self.ground_truth + GROUND_OFFSET
         self.knowledge.excursion_set = np.zeros_like(self.knowledge.mu)
         self.knowledge.excursion_set[self.knowledge.mu < self.knowledge.threshold_salinity] = True
         # PlotGroundTruth(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX, filename="GroundTruth_different_color", html=True)
-        Plot3D(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX, filename="GroundTruth_different_color", html=True)
+        Plot3D(knowledge=self.knowledge, vmin=VMIN, vmax=VMAX, filename="GroundTruth_offset", html=True)
 
 sinmod_visualiser = SINMODVisualiser()
 sinmod_visualiser.plot_ground_truth()

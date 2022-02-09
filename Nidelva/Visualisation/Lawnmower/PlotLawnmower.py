@@ -51,7 +51,7 @@ class Lawnmower:
                                    distance_lateral=DISTANCE_LATERAL, distance_vertical=DISTANCE_VERTICAL,
                                    distance_tolerance=DISTANCE_TOLERANCE, distance_self=DISTANCE_SELF)
         self.ground_truth = np.linalg.cholesky(self.knowledge.Sigma) @ \
-                            vectorise(np.random.randn(self.knowledge.coordinates.shape[0])) + self.knowledge.mu
+                            vectorise(np.random.randn(self.knowledge.coordinates.shape[0])) + self.knowledge.mu + GROUND_OFFSET
         LawnMowerPlanningSetup = LawnMowerPlanning(knowledge=self.knowledge)
         LawnMowerPlanningSetup.build_3d_lawn_mower()
         self.lawn_mower_path_3d = LawnMowerPlanningSetup.lawn_mower_path_3d
@@ -69,7 +69,7 @@ class Lawnmower:
             print("Step No. ", i)
             lat_next, lon_next, depth_next = self.lawn_mower_path_3d[self.starting_index + i, :]
             self.trajectory.append([lat_next, lon_next, depth_next])
-            ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next], self.knowledge.xyz_wgs)
+            ind_sample = get_grid_ind_at_nearest_loc([lat_next, lon_next, depth_next], self.knowledge.coordinates)
 
             self.knowledge.step_no = i
             self.knowledge = Sampler(self.knowledge, self.ground_truth, ind_sample).Knowledge
@@ -79,12 +79,12 @@ class Lawnmower:
 
         self.get_excursion_set()
         ContentPlot(knowledge=self.knowledge, trajectory=self.trajectory, vmin=VMIN, vmax=VMAX,
-                    filename="lawnmower", html=False)
+                    filename="lawnmower_offset", html=False)
 
     def get_excursion_set(self):
         self.knowledge.excursion_set = np.zeros_like(self.knowledge.mu)
         self.knowledge.excursion_set[self.knowledge.mu < self.knowledge.threshold_salinity] = True
 
-a = Lawnmower(steps=20)
+a = Lawnmower(steps=40)
 a.run_lawn_mower()
 

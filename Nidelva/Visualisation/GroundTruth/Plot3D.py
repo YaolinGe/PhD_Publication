@@ -4,7 +4,7 @@ Author: Yaolin Ge
 Contact: yaolin.ge@ntnu.no
 Date: 2022-01-06
 """
-
+import numpy as np
 
 from usr_func import *
 import matplotlib.pyplot as plt
@@ -36,7 +36,13 @@ class Plot3D:
 
         # print(lat.shape)
         points_mean, values_mean = interpolate_3d(lon, lat, depth, self.knowledge.mu)
-        points_es, values_es = interpolate_3d(lon, lat, depth, self.knowledge.excursion_set)
+
+        points_es = points_mean
+        values_es = np.zeros_like(values_mean)
+        values_es[values_mean < self.knowledge.threshold_salinity] = True
+        points_es, values_es = interpolate_3d(points_es[:, 0], points_es[:, 1], points_es[:, 2], values_es.flatten())
+
+        # points_es, values_es = interpolate_3d(lon, lat, depth, self.knowledge.excursion_set)
         # points_std, values_std = interpolate_3d(lon, lat, depth, np.sqrt(np.diag(self.knowledge.Sigma)))
         # points_ep, values_ep = interpolate_3d(lon, lat, depth, self.knowledge.excursion_prob)
         trajectory = np.array(self.knowledge.trajectory)
@@ -53,7 +59,7 @@ class Plot3D:
             value=values_mean.flatten(),
             isomin=self.vmin,
             isomax=self.vmax,
-            opacity = .1,
+            opacity = .4,
             surface_count = 10,
             # colorscale = "BrBG",
             coloraxis="coloraxis",
@@ -66,25 +72,25 @@ class Plot3D:
             row=1, col=1
         )
 
-        fig.add_trace(go.Volume(
-            x = points_es[:, 0],
-            y = points_es[:, 1],
-            z = -points_es[:, 2],
-            value=values_es.flatten(),
-            isomin=0,
-            isomax=1,
-            opacity = 0.4,
-            surface_count = 1,
-            colorscale = "Reds",
-            showscale=False,
-            # colorscale=discrete_cmap,
-            # coloraxis="coloraxis1",
-            # colorbar=dict(x=.75,y=0.5, len=1),
-            # reversescale=True,
-            caps=dict(x_show=False, y_show=False, z_show = False),
-            ),
-            row=1, col=1
-        )
+        # fig.add_trace(go.Volume(
+        #     x = points_es[:, 0],
+        #     y = points_es[:, 1],
+        #     z = -points_es[:, 2],
+        #     value=values_es.flatten(),
+        #     isomin=0,
+        #     isomax=1,
+        #     opacity = 0.5,
+        #     surface_count = 1,
+        #     colorscale = "Reds",
+        #     showscale=False,
+        #     # colorscale=discrete_cmap,
+        #     # coloraxis="coloraxis1",
+        #     # colorbar=dict(x=.75,y=0.5, len=1),
+        #     # reversescale=True,
+        #     caps=dict(x_show=False, y_show=False, z_show = False),
+        #     ),
+        #     row=1, col=1
+        # )
 
         # print(values_std)
         # if len(values_std):
@@ -194,13 +200,13 @@ class Plot3D:
         camera = dict(
             up=dict(x=0, y=0, z=1),
             center=dict(x=0, y=0, z=0),
-            eye=dict(x=1.25, y=-1.25, z=1)
+            eye=dict(x=0, y=-1.25, z=.5)
         )
         fig.update_coloraxes(colorscale="BrBG", colorbar=dict(lenmode='fraction', len=.5, thickness=20,
                                                                 tickfont=dict(size=18, family="Times New Roman"),
                                                                 title="Salinity",
                                                                 titlefont=dict(size=18, family="Times New Roman")))
-        fig.update_layout(coloraxis_colorbar_x=0.75)
+        fig.update_layout(coloraxis_colorbar_x=0.8)
         fig.update_layout(
             title={
                 'text': "",
@@ -215,7 +221,7 @@ class Plot3D:
                 zaxis_tickfont=dict(size=14, family="Times New Roman"),
                 xaxis_title=dict(text="Longitude", font=dict(size=18, family="Times New Roman")),
                 yaxis_title=dict(text="Latitude", font=dict(size=18, family="Times New Roman")),
-                zaxis_title=dict(text="Depth", font=dict(size=18, family="Times New Roman")),
+                zaxis_title=dict(text="Depth [m]", font=dict(size=18, family="Times New Roman")),
             ),
             scene_aspectmode='manual',
             scene_aspectratio=dict(x=1, y=1, z=.25),

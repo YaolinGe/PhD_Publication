@@ -57,10 +57,11 @@ class KrigingPlot:
         pass
 
     def prepareAUVData(self):
+        nochange = True
         print("Here comes the auv data reorganisation")
         print("length of dataset: ", len(self.data_auv))
         datapath_auv = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Experiment/Data/data_auv.csv"
-        if os.path.exists(datapath_auv):
+        if os.path.exists(datapath_auv) and nochange:
             print("Dataset exists already, will only load...")
             t1 = time.time()
             df = pd.read_csv(datapath_auv)
@@ -88,8 +89,9 @@ class KrigingPlot:
             RotationalMatrix_WGS2USR = getRotationalMatrix_WGS2USR(self.gridConfig.angle_rotation)
             self.xyz_auv_wgs = np.hstack((vectorise(x_auv_wgs), vectorise(y_auv_wgs), vectorise(depth_auv_wgs)))
             self.xyz_auv_usr = (RotationalMatrix_WGS2USR @ self.xyz_auv_wgs.T).T
-            self.coordinates_auv_wgs = np.hstack((lat_auv_wgs, lon_auv_wgs, depth_auv_wgs))
             self.depth_auv_rounded = vectorise(round2base(depth_auv_wgs, .5))
+            self.coordinates_auv_wgs = np.hstack((lat_auv_wgs, lon_auv_wgs, depth_auv_wgs)) # TODO check rounded or not
+            # self.coordinates_auv_wgs = np.hstack((lat_auv_wgs, lon_auv_wgs, self.depth_auv_rounded)) # TODO check rounded or not
 
             self.mu_sinmod_at_auv_loc = self.sinmod.getSINMODOnCoordinates(self.coordinates_auv_wgs)
             t2 = time.time()
@@ -181,8 +183,8 @@ class KrigingPlot:
         # == get bigger canvas ==
         lat_min, lon_min, depth_min = map(np.amin, [self.coordinates_grid[:, 0], self.coordinates_grid[:, 1], self.coordinates_grid[:, 2]])
         lat_max, lon_max, depth_max = map(np.amax, [self.coordinates_grid[:, 0], self.coordinates_grid[:, 1], self.coordinates_grid[:, 2]])
-        nlat = 50
-        nlon = 50
+        nlat = 100
+        nlon = 100
         ndepth = 5
         lat_canvas = np.linspace(lat_min, lat_max, nlat)
         lon_canvas = np.linspace(lon_min, lon_max, nlon)
@@ -218,13 +220,19 @@ class KrigingPlot:
         self.ep_prior_canvas = vectorise(self.excursion_prob_prior[self.ind_extracted])
         self.ep_posterior_canvas = vectorise(self.excursion_prob_posterior[self.ind_extracted])
 
-        for i in range(len(self.ep_posterior_canvas)):
+        counter = 0
+        for i in range(len(self.lat_canvas)):
             if not self.box_region.contains_point((self.lat_canvas[i], self.lon_canvas[i])):
-                self.mu_prior_canvas[i] = float("NaN")
-                self.mu_posterior_canvas[i] = float("NaN")
-                self.ep_prior_canvas[i] = float("NaN")
-                self.ep_posterior_canvas[i] = float("NaN")
-
+                counter = counter + 1
+                # self.mu_prior_canvas[i] = float("NaN")
+                # self.mu_posterior_canvas[i] = float("NaN")
+                # self.ep_prior_canvas[i] = float("NaN")
+                # self.ep_posterior_canvas[i] = float("NaN")
+                self.mu_prior_canvas[i] = -1
+                self.mu_posterior_canvas[i] = -1
+                self.ep_prior_canvas[i] = -1
+                self.ep_posterior_canvas[i] = -1
+        print(counter, " points are not in the grid")
         # plt.plot()
         # plt.plot(self.coordinates_canvas[:, 1], self.coordinates_canvas[:, 0], 'k.')
         # plt.plot(self.coordinates_grid[:, 1], self.coordinates_grid[:, 0], 'r.')
@@ -256,8 +264,10 @@ class KrigingPlot:
         lon = self.coordinates_canvas[:, 1]
         depth = self.coordinates_canvas[:, 2]
 
-        values_mu = refill_nan_values(self.mu_posterior_canvas)
-        values_ep = refill_nan_values(self.ep_posterior_canvas)
+        values_mu = self.mu_posterior_canvas
+        values_ep = self.ep_posterior_canvas
+        # values_mu = refill_nan_values(self.mu_posterior_canvas)
+        # values_ep = refill_nan_values(self.ep_posterior_canvas)
 
         # coordinates_mu_prior, values_mu_prior = interpolate_3d(lon, lat, depth, self.mu_prior_canvas)
         # coordinates_ep_prior, values_ep_prior = interpolate_3d(lon, lat, depth, self.ep_prior_canvas)
@@ -269,213 +279,93 @@ class KrigingPlot:
         # coordinates_es_posterior, values_es_posterior = interpolate_3d(lon, lat, depth, self.excursion_set_posterior)
         # coordinates_boundary_posterior, values_boundary_posterior = interpolate_3d(lon, lat, depth, self.boundary_posterior)
 
-
         # == remove smoothing section ==
 
+        with open('colorscale.txt', 'r') as file:
+            colorscales = file.read().splitlines()
 
-        fig = make_subplots(rows=1, cols=1, specs=[[{'type': 'scene'}]])
+        # for colorscale in colorscales:
+        for colorscale in ["gnbu"]:
+            t1 = time.time()
+            fig = make_subplots(rows=1, cols=1, specs=[[{'type': 'scene'}]])
 
-        fig.add_trace(go.Volume(
-            x=self.coordinates_canvas[:, 1],
-            y=self.coordinates_canvas[:, 0],
-            z=-self.coordinates_canvas[:, 2],
-            value=values_mu.flatten(),
-            isomin=25,
-            isomax=30,
-            opacity=.1,
-            surface_count=30,
-            coloraxis="coloraxis",
-            caps=dict(x_show=False, y_show=False, z_show=False),
-        ),
-            row=1, col=1
-        )
+            xv = self.coordinates_canvas[:, 1]
+            yv = self.coordinates_canvas[:, 0]
+            zv = self.coordinates_canvas[:, 2]
+            values = values_ep
+            for j in range(len(np.unique(zv))):
+                ind = (zv == np.unique(zv)[j])
+                fig.add_trace(
+                    go.Isosurface(x=xv[ind], y=yv[ind], z=-zv[ind],
+                                      isomin=0,
+                                      isomax=1,
+                                  # value=mu_cond[ind], colorscale=newcmp),
+                                  value=values[ind], coloraxis="coloraxis"),
+                    row=1, col=1
+                )
 
-        fig.add_trace(go.Volume(
-            x=self.coordinates_canvas[:, 1],
-            y=self.coordinates_canvas[:, 0],
-            z=-self.coordinates_canvas[:, 2],
-            value=values_ep.flatten(),
-            isomin=.75,
-            isomax=1,
-            opacity=.7,
-            surface_count=1,
-            colorscale="turbid",
-            showscale=False,
-            caps=dict(x_show=False, y_show=False, z_show=False),
-        ),
-            row=1, col=1
-        )
+            posterior = True
+            if posterior:
+                fig.add_trace(go.Scatter3d(
+                    x=self.coordinates_auv_wgs[:, 1],
+                    y=self.coordinates_auv_wgs[:, 0],
+                    z=-self.coordinates_auv_wgs[:, 2],
+                    # mode='markers+lines',
+                    mode='lines',
+                    line=dict(
+                        color="black",
+                        width=5,
+                        showscale=False,
+                    ),
+                    showlegend=False,
+                ),
+                    row='all', col='all'
+                )
 
-        # fig.add_trace(go.Scatter3d(
-        #     x=self.coordinates_grid[:, 1],
-        #     y=self.coordinates_grid[:, 0],
-        #     z=-self.coordinates_grid[:, 2],
-        #     # value=self.mu_posterior.flatten(),
-        #     mode='markers',
-        #     marker=dict(
-        #         size=5,
-        #         color=self.mu_posterior.flatten(),
-        #         colorscale='BrBG',   # choose a colorscale
-        #         # opacity=0.
-        #     )
-        #     # isomin=16,
-        #     # isomax=30,
-        #     # opacity=.1,
-        #     # surface_count=30,
-        #     # coloraxis="coloraxis",
-        #     # caps=dict(x_show=False, y_show=False, z_show=False),
-        # ),
-        #     row=1, col=1
-        # )
+            camera = dict(
+                up=dict(x=0, y=0, z=1),
+                center=dict(x=0, y=0, z=0),
+                eye=dict(x=-1.25, y=-1.25, z=1)
+            )
+            fig.update_coloraxes(colorscale=colorscale, colorbar=dict(lenmode='fraction', len=.5, thickness=20,
+                                                                    tickfont=dict(size=18, family="Times New Roman"),
+                                                                    title="Excursion Probability",
+                                                                    titlefont=dict(size=18, family="Times New Roman")))
+            fig.update_layout(coloraxis_colorbar_x=0.75)
 
-        # fig.add_trace(go.Volume(
-        #     x=self.coordinates_grid[:, 1],
-        #     y=self.coordinates_grid[:, 0],
-        #     z=-self.coordinates_grid[:, 2],
-        #     value=self.mu_posterior.flatten(),
-        #     isomin=16,
-        #     isomax=30,
-        #     opacity=.1,
-        #     surface_count=30,
-        #     coloraxis="coloraxis",
-        #     caps=dict(x_show=False, y_show=False, z_show=False),
-        # ),
-        #     row=1, col=1
-        # )
-
-
-        posterior = True
-        # == posterior ==
-        # if posterior:
-        #     coordinates_mean = coordinates_mu_posterior
-        #     values_mean = values_mu_posterior
-        #
-        #     # coordinates_es = coordinates_es_posterior
-        #     # values_es = values_es_posterior
-        #
-        #     coordinates_ep = coordinates_ep_posterior
-        #     values_ep = values_ep_posterior
-        #
-        #     # coordinates_b = coordinates_boundary_posterior
-        #     # values_b = values_boundary_posterior
-        #
-        # else:
-        #     coordinates_mean = coordinates_mu_prior
-        #     values_mean = values_mu_prior
-        #
-        #     # coordinates_es = coordinates_es_prior
-        #     # values_es = values_es_prior
-        #
-        #     coordinates_ep = coordinates_ep_prior
-        #     values_ep = values_ep_prior
-        #
-        #     # coordinates_b = coordinates_boundary_prior
-        #     # values_b = values_boundary_prior
-        #
-        # fig.add_trace(go.Volume(
-        #     x=coordinates_mean[:, 0],
-        #     y=coordinates_mean[:, 1],
-        #     z=-coordinates_mean[:, 2],
-        #     value=values_mean.flatten(),
-        #     isomin=16,
-        #     isomax=30,
-        #     opacity=.1,
-        #     surface_count=30,
-        #     coloraxis="coloraxis",
-        #     caps=dict(x_show=False, y_show=False, z_show=False),
-        # ),
-        #     row=1, col=1
-        # )
-        #
-        # # zv = coordinates_ep[:, 2]
-        # # for j in range(len(np.unique(zv))):
-        # #     ind = (zv == np.unique(zv)[j])
-        # #     fig.add_trace(
-        # #         go.Isosurface(x=coordinates_ep[ind, 0],
-        # #                       y=coordinates_ep[ind, 1],
-        # #                       z=-zv[ind],
-        # #                       opacity=.3,
-        # #                       # value=mu_cond[ind], colorscale=newcmp),
-        # #                       value=values_ep[ind], coloraxis="coloraxis"),
-        # #         row=1, col=1
-        # #     )
-        #
-        # fig.add_trace(go.Volume(
-        #     x=coordinates_ep[:, 0],
-        #     y=coordinates_ep[:, 1],
-        #     z=-coordinates_ep[:, 2],
-        #     value=values_ep.flatten(),
-        #     isomin=.75,
-        #     isomax=1,
-        #     opacity=.7,
-        #     surface_count=1,
-        #     # colorscale="Peach",
-        #     colorscale="turbid",
-        #     showscale=False,
-        #     caps=dict(x_show=False, y_show=False, z_show=False),
-        # ),
-        #     row=1, col=1
-        # )
-
-        # if posterior:
-        #     fig.add_trace(go.Scatter3d(
-        #         x=self.coordinates_fake_auv[:, 1],
-        #         y=self.coordinates_fake_auv[:, 0],
-        #         z=-self.coordinates_fake_auv[:, 2],
-        #         # mode='markers+lines',
-        #         mode='lines',
-        #         line=dict(
-        #             color="black",
-        #             width=5,
-        #             showscale=False,
-        #         ),
-        #         showlegend=False,
-        #     ),
-        #         row='all', col='all'
-        #     )
-
-        camera = dict(
-            up=dict(x=0, y=0, z=1),
-            center=dict(x=0, y=0, z=0),
-            eye=dict(x=-1.25, y=-1.25, z=1)
-        )
-        fig.update_coloraxes(colorscale="BrBG", colorbar=dict(lenmode='fraction', len=.5, thickness=20,
-                                                                tickfont=dict(size=18, family="Times New Roman"),
-                                                                title="Salinity",
-                                                                titlefont=dict(size=18, family="Times New Roman")))
-        fig.update_layout(coloraxis_colorbar_x=0.75)
-
-        fig.update_layout(
-            title={
-                'text': "Prior field after assilimating SINMOD and pre-survey data",
-                'y': 0.75,
-                'x': 0.5,
-                'xanchor': 'center',
-                'yanchor': 'top',
-                'font': dict(size=30, family="Times New Roman"),
-            },
-            scene=dict(
-                zaxis=dict(nticks=4, range=[-3, 0], ),
-                xaxis_tickfont=dict(size=14, family="Times New Roman"),
-                yaxis_tickfont=dict(size=14, family="Times New Roman"),
-                zaxis_tickfont=dict(size=14, family="Times New Roman"),
-                xaxis_title=dict(text="Longitude", font=dict(size=18, family="Times New Roman")),
-                yaxis_title=dict(text="Latitude", font=dict(size=18, family="Times New Roman")),
-                zaxis_title=dict(text="Depth [m]", font=dict(size=18, family="Times New Roman")),
-            ),
-            scene_aspectmode='manual',
-            scene_aspectratio=dict(x=1, y=1, z=.25),
-            scene_camera=camera,
-        )
-        if posterior:
-            filename = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Experiment/Field_posterior.html"
-            filepath = "/Users/yaoling/OneDrive\ -\ NTNU/MASCOT_PhD/Publication/Nidelva/fig/Experiment/Field_posterior.html"
-        else:
-            filename = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Experiment/Field_prior.html"
-            filepath = "/Users/yaoling/OneDrive\ -\ NTNU/MASCOT_PhD/Publication/Nidelva/fig/Experiment/Field_prior.html"
-        plotly.offline.plot(fig, filename=filename, auto_open=False)
-        os.system("open -a \"Google Chrome\" "+filepath)
-        pass
+            fig.update_layout(
+                title={
+                    'text': "Posterior field after AUV sampling",
+                    'y': 0.75,
+                    'x': 0.5,
+                    'xanchor': 'center',
+                    'yanchor': 'top',
+                    'font': dict(size=30, family="Times New Roman"),
+                },
+                scene=dict(
+                    zaxis=dict(nticks=4, range=[-3, 0], ),
+                    xaxis_tickfont=dict(size=14, family="Times New Roman"),
+                    yaxis_tickfont=dict(size=14, family="Times New Roman"),
+                    zaxis_tickfont=dict(size=14, family="Times New Roman"),
+                    xaxis_title=dict(text="Longitude", font=dict(size=18, family="Times New Roman")),
+                    yaxis_title=dict(text="Latitude", font=dict(size=18, family="Times New Roman")),
+                    zaxis_title=dict(text="Depth [m]", font=dict(size=18, family="Times New Roman")),
+                ),
+                scene_aspectmode='manual',
+                scene_aspectratio=dict(x=1, y=1, z=.5),
+                scene_camera=camera,
+            )
+            if posterior:
+                filename = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Experiment/Field_posterior_"+colorscale+".html"
+                filepath = "/Users/yaoling/OneDrive\ -\ NTNU/MASCOT_PhD/Publication/Nidelva/fig/Experiment/Field_posterior_"+colorscale+".html"
+            else:
+                filename = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/fig/Experiment/Field_prior.html"
+                filepath = "/Users/yaoling/OneDrive\ -\ NTNU/MASCOT_PhD/Publication/Nidelva/fig/Experiment/Field_prior.html"
+            plotly.offline.plot(fig, filename=filename, auto_open=False)
+            os.system("open -a \"Google Chrome\" "+filepath)
+            pass
+            t2 = time.time()
+            print("Time consumed: ", t2 - t1)
 
     def save_processed_data_slices(self):
         self.pred_err = vectorise(np.sqrt(np.diag(self.Sigma_posterior)))
@@ -543,8 +433,8 @@ class KrigingPlot:
         print("Finished smoothing~")
 
 a = KrigingPlot()
-# a.get_data_on_bigger_canvas()
-# a.plot()
-a.smooth_data()
+a.get_data_on_bigger_canvas()
+a.plot()
+# a.smooth_data()
 
 

@@ -59,7 +59,7 @@ class LawnMowerPlanning:
         self.x, self.y = map(np.arange, [0, 0], [XRANGE, YRANGE], [self.knowledge.distance_lateral, self.knowledge.distance_lateral])
 
     def get_unique_depth_layer(self):
-        self.depth = np.unique(self.knowledge.xyz_wgs[:, 2])
+        self.depth = np.unique(self.knowledge.coordinates[:, 2])
 
     def get_yoyo_depth_waypoint(self):
         self.depth_yoyo = np.append(self.depth, np.flip(self.depth))
