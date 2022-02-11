@@ -85,6 +85,6 @@ class Lawnmower:
         self.knowledge.excursion_set = np.zeros_like(self.knowledge.mu)
         self.knowledge.excursion_set[self.knowledge.mu < self.knowledge.threshold_salinity] = True
 
-a = Lawnmower(steps=40)
+a = Lawnmower(steps=20)
 a.run_lawn_mower()
 
