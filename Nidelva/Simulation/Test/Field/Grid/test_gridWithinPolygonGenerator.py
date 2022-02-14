@@ -4,7 +4,7 @@ Author: Yaolin Ge
 Contact: yaolin.ge@ntnu.no
 Date: 2022-01-05
 """
-
+import pandas as pd
 
 from Nidelva.Simulation.Field.Grid.gridWithinPolygonGenerator import GridGenerator
 from gmplot import GoogleMapPlotter
@@ -20,13 +20,20 @@ polygon = np.array([[6.344800000000000040e+01, 1.040000000000000036e+01],
                    [6.344800000000000040e+01, 1.041999999999999993e+01],
                    [6.346000000000000085e+01, 1.041999999999999993e+01],
                    [6.346000000000000085e+01, 1.040000000000000036e+01]])
-depth = [1, 5, 10]
+depth = [1, 2, 3, 4, 5]
 
 gridGenerator = GridGenerator(polygon = polygon, depth=depth, distance_neighbour = 120, no_children=6)
 coordinates = gridGenerator.coordinates
 ind_start = np.random.randint(0, coordinates.shape[0])
-print(ind_start)
 
+#%% produce grid for
+path = "/Users/yaoling/OneDrive - NTNU/MASCOT_PhD/Publication/Nidelva/Demo/demo2susan_rangefinder/"
+df = pd.DataFrame(coordinates, columns=['lat', 'lon', 'depth'])
+df.to_csv(path+"grid.csv", index=False)
+
+
+
+#%%
 def find_candidates_loc(ind_now, coordinates, distance_neighbour, distance_self):
     dx, dy = latlon2xy(coordinates[:, 0], coordinates[:, 1], coordinates[ind_now, 0], coordinates[ind_now, 1])
     dz = coordinates[:, 2] - coordinates[ind_now, 2]
